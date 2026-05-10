@@ -1,0 +1,13 @@
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+outputs/*
+!outputs/.gitkeep
+venv/*
+!venv/PLACEHOLDER.md
+.venv/
+.ipynb_checkpoints/
