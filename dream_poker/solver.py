@@ -8,6 +8,8 @@ bit-for-bit port of the original PokerRL DREAM repository.
 from __future__ import annotations
 
 import time
+import random
+import math
 from typing import Dict, List, Optional, Sequence
 
 import numpy as np
@@ -65,6 +67,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         num_iterations: int = 500,
         num_traversals: int = 320,
         learning_rate: float = 3e-3,
+        learning_rate_schedule: str = "constant",
+        learning_rate_end: Optional[float] = None,
         batch_size_advantage: int = 1024,
         batch_size_strategy: int = 1024,
         batch_size_baseline: Optional[int] = None,
@@ -96,6 +100,11 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._num_iterations = int(num_iterations)
         self._num_traversals = int(num_traversals)
         self._learning_rate = float(learning_rate)
+        self._learning_rate_schedule = str(learning_rate_schedule)
+        self._learning_rate_end = (
+            float(learning_rate_end) if learning_rate_end is not None else float(learning_rate)
+        )
+        self._current_learning_rate = float(learning_rate)
         self._epsilon = float(epsilon)
         self._batch_size_advantage = int(batch_size_advantage)
         self._batch_size_strategy = int(batch_size_strategy)
@@ -144,6 +153,35 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._last_advantage_grad_norm = [np.nan] * self._num_players
         self._last_baseline_grad_norm = [np.nan] * self._num_players
         self._last_policy_grad_norm = np.nan
+        self._policy_training_events = 0
+        self._policy_gradient_steps_total = 0
+
+    def _apply_learning_rate_schedule(self, iteration: int) -> None:
+        iteration = int(iteration)
+        if self._num_iterations <= 1:
+            progress = 1.0
+        else:
+            progress = (iteration - 1) / float(self._num_iterations - 1)
+            progress = min(max(progress, 0.0), 1.0)
+
+        if self._learning_rate_schedule == "constant":
+            lr = self._learning_rate
+        elif self._learning_rate_schedule == "cosine_decay":
+            start = self._learning_rate
+            end = self._learning_rate_end
+            lr = end + 0.5 * (start - end) * (1.0 + math.cos(math.pi * progress))
+        elif self._learning_rate_schedule == "linear_decay":
+            start = self._learning_rate
+            end = self._learning_rate_end
+            lr = start + (end - start) * progress
+        else:
+            raise ValueError(f"Unknown learning-rate schedule: {self._learning_rate_schedule}")
+
+        self._current_learning_rate = float(lr)
+        optimizers = [self._optimizer_policy] + self._optimizer_advantages + self._optimizer_baselines
+        for optimizer in optimizers:
+            for group in optimizer.param_groups:
+                group["lr"] = float(lr)
 
     # ---- Public OpenSpiel policy interface ----
     def action_probabilities(self, state, player_id=None) -> Dict[int, float]:
@@ -162,12 +200,42 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         return {int(a): float(p) for a, p in zip(legal_actions, probs)}
 
     # ---- Main training loop ----
-    def solve(self):
-        start_time = time.perf_counter()
+    def solve(
+        self,
+        policy_training_mode: str = "intermittent",
+        final_policy_network_train_steps: Optional[int] = None,
+        isolate_policy_training_rng: bool = True,
+        target_iteration: Optional[int] = None,
+        start_time: Optional[float] = None,
+    ):
+        """Train DREAM and return checkpoint metrics.
+
+        ``intermittent`` trains the average-policy network periodically, matching
+        the baseline protocol. ``final_only`` delays average-policy fitting until
+        after traversal data collection. The average-policy network is not used
+        for traversal, so RNG isolation keeps intermediate policy fitting from
+        perturbing later traversal and baseline/advantage samples.
+
+        ``target_iteration`` allows a caller to train incrementally from the
+        current solver iteration, which is used by checkpoint/resume ablations.
+        """
+        mode = str(policy_training_mode)
+        if mode not in {"intermittent", "final_only"}:
+            raise ValueError("policy_training_mode must be 'intermittent' or 'final_only'.")
+
+        if start_time is None:
+            start_time = time.perf_counter()
+        if target_iteration is None:
+            target_iteration = self._num_iterations
+        target_iteration = int(target_iteration)
+        if target_iteration < self._iteration:
+            raise ValueError("target_iteration must be at least the current solver iteration.")
+
         curves: List[Dict] = []
 
         # In the official DREAM repository an iteration denotes a sequential update for both players.
-        for iteration in range(1, self._num_iterations + 1):
+        for iteration in range(self._iteration + 1, target_iteration + 1):
+            self._apply_learning_rate_schedule(iteration)
             self._iteration = int(iteration)
             for traverser in range(self._num_players):
                 for _ in range(self._num_traversals):
@@ -177,12 +245,103 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 self._last_advantage_loss[traverser] = self._learn_advantage_network(traverser)
                 self._last_baseline_loss[traverser] = self._learn_baseline_network(traverser)
 
-            train_policy_now = (iteration % self._policy_network_train_every == 0) or (iteration == self._num_iterations)
-            if train_policy_now:
-                self._last_policy_loss = self._learn_strategy_network()
+            if mode == "intermittent":
+                train_policy_now = (
+                    iteration % self._policy_network_train_every == 0
+                ) or (iteration == target_iteration)
+                if train_policy_now:
+                    if isolate_policy_training_rng:
+                        rng_state = self._capture_rng_state()
+                        self._last_policy_loss = self._learn_strategy_network()
+                        curves.append(self._checkpoint_metrics(start_time))
+                        self._restore_rng_state(rng_state)
+                    else:
+                        self._last_policy_loss = self._learn_strategy_network()
+                        curves.append(self._checkpoint_metrics(start_time))
+
+            elif mode == "final_only" and iteration == target_iteration:
+                original_steps = self._policy_network_train_steps
+                if final_policy_network_train_steps is not None:
+                    self._policy_network_train_steps = int(final_policy_network_train_steps)
+                self._last_policy_loss = self._learn_strategy_network_controlled(isolate_rng=False)
+                self._policy_network_train_steps = original_steps
                 curves.append(self._checkpoint_metrics(start_time))
 
         return pd.DataFrame(curves)
+
+    def full_checkpoint_state(self) -> Dict:
+        """Return full training state for checkpoint/resume experiments."""
+        return {
+            "iteration": int(self._iteration),
+            "nodes_touched": int(self._nodes_touched),
+            "last_advantage_loss": list(self._last_advantage_loss),
+            "last_baseline_loss": list(self._last_baseline_loss),
+            "last_policy_loss": float(self._last_policy_loss),
+            "last_advantage_grad_norm": list(self._last_advantage_grad_norm),
+            "last_baseline_grad_norm": list(self._last_baseline_grad_norm),
+            "last_policy_grad_norm": float(self._last_policy_grad_norm),
+            "policy_training_events": int(self._policy_training_events),
+            "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
+            "learning_rate_schedule": self._learning_rate_schedule,
+            "learning_rate_end": float(self._learning_rate_end),
+            "current_learning_rate": float(self._current_learning_rate),
+            "policy_network": self._policy_network.state_dict(),
+            "optimizer_policy": self._optimizer_policy.state_dict(),
+            "advantage_networks": [net.state_dict() for net in self._advantage_networks],
+            "optimizer_advantages": [opt.state_dict() for opt in self._optimizer_advantages],
+            "baseline_networks": [net.state_dict() for net in self._baseline_networks],
+            "optimizer_baselines": [opt.state_dict() for opt in self._optimizer_baselines],
+            "advantage_memories": [buf.state_dict() for buf in self._advantage_memories],
+            "strategy_memory": self._strategy_memories.state_dict(),
+            "baseline_replays": [buf.state_dict() for buf in self._baseline_replays],
+            "python_random_state": random.getstate(),
+            "numpy_random_state": np.random.get_state(),
+            "torch_random_state": torch.get_rng_state(),
+        }
+
+    def load_full_checkpoint_state(self, state: Dict) -> None:
+        """Restore a checkpoint created by ``full_checkpoint_state``."""
+        self._iteration = int(state["iteration"])
+        self._nodes_touched = int(state["nodes_touched"])
+        self._last_advantage_loss = list(state.get("last_advantage_loss", [np.nan] * self._num_players))
+        self._last_baseline_loss = list(state.get("last_baseline_loss", [np.nan] * self._num_players))
+        self._last_policy_loss = float(state.get("last_policy_loss", np.nan))
+        self._last_advantage_grad_norm = list(
+            state.get("last_advantage_grad_norm", [np.nan] * self._num_players)
+        )
+        self._last_baseline_grad_norm = list(
+            state.get("last_baseline_grad_norm", [np.nan] * self._num_players)
+        )
+        self._last_policy_grad_norm = float(state.get("last_policy_grad_norm", np.nan))
+        self._policy_training_events = int(state.get("policy_training_events", 0))
+        self._policy_gradient_steps_total = int(state.get("policy_gradient_steps_total", 0))
+        self._learning_rate_schedule = str(state.get("learning_rate_schedule", self._learning_rate_schedule))
+        self._learning_rate_end = float(state.get("learning_rate_end", self._learning_rate_end))
+        self._current_learning_rate = float(state.get("current_learning_rate", self._current_learning_rate))
+
+        self._policy_network.load_state_dict(state["policy_network"])
+        self._optimizer_policy.load_state_dict(state["optimizer_policy"])
+        for net, net_state in zip(self._advantage_networks, state["advantage_networks"]):
+            net.load_state_dict(net_state)
+        for opt, opt_state in zip(self._optimizer_advantages, state["optimizer_advantages"]):
+            opt.load_state_dict(opt_state)
+        for net, net_state in zip(self._baseline_networks, state["baseline_networks"]):
+            net.load_state_dict(net_state)
+        for opt, opt_state in zip(self._optimizer_baselines, state["optimizer_baselines"]):
+            opt.load_state_dict(opt_state)
+
+        for buf, buf_state in zip(self._advantage_memories, state["advantage_memories"]):
+            buf.load_state_dict(buf_state)
+        self._strategy_memories.load_state_dict(state["strategy_memory"])
+        for buf, buf_state in zip(self._baseline_replays, state["baseline_replays"]):
+            buf.load_state_dict(buf_state)
+
+        if "python_random_state" in state:
+            random.setstate(state["python_random_state"])
+        if "numpy_random_state" in state:
+            np.random.set_state(state["numpy_random_state"])
+        if "torch_random_state" in state:
+            torch.set_rng_state(state["torch_random_state"])
 
     # ---- Traversal ----
     def _advance_through_chance(self, state):
@@ -376,9 +535,27 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             last_loss = float(loss.detach().cpu().item())
         return last_loss
 
+    def _capture_rng_state(self):
+        return random.getstate(), np.random.get_state(), torch.get_rng_state()
+
+    def _restore_rng_state(self, rng_state) -> None:
+        py_state, np_state, torch_state = rng_state
+        random.setstate(py_state)
+        np.random.set_state(np_state)
+        torch.set_rng_state(torch_state)
+
+    def _learn_strategy_network_controlled(self, isolate_rng: bool = True) -> float:
+        if not isolate_rng:
+            return self._learn_strategy_network()
+        rng_state = self._capture_rng_state()
+        loss = self._learn_strategy_network()
+        self._restore_rng_state(rng_state)
+        return loss
+
     def _learn_strategy_network(self) -> float:
         if len(self._strategy_memories) < self._batch_size_strategy:
             return float("nan")
+        self._policy_training_events += 1
         last_loss = float("nan")
         for _ in range(self._policy_network_train_steps):
             samples = self._strategy_memories.sample(self._batch_size_strategy)
@@ -398,6 +575,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             loss.backward()
             self._last_policy_grad_norm = grad_norm(self._policy_network.parameters())
             self._optimizer_policy.step()
+            self._policy_gradient_steps_total += 1
             last_loss = float(loss.detach().cpu().item())
         return last_loss
 
@@ -418,6 +596,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "iteration": int(self._iteration),
             "nodes_touched": int(self._nodes_touched),
             "wall_clock_seconds": float(time.perf_counter() - start_time),
+            "learning_rate": float(self._current_learning_rate),
             "nash_conv": nash_conv,
             "exploitability": expl,
             "policy_value_player_0": policy_value,
@@ -432,6 +611,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "baseline_grad_norm_player_0": float(self._last_baseline_grad_norm[0]),
             "baseline_grad_norm_player_1": float(self._last_baseline_grad_norm[1]),
             "policy_grad_norm": float(self._last_policy_grad_norm),
+            "policy_training_events": int(self._policy_training_events),
+            "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
             "strategy_buffer_size": int(len(self._strategy_memories)),
             "advantage_buffer_size_player_0": int(len(self._advantage_memories[0])),
             "advantage_buffer_size_player_1": int(len(self._advantage_memories[1])),

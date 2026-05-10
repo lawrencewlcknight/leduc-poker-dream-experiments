@@ -54,6 +54,17 @@ class ReservoirBuffer:
             return list(self._data)
         return random.sample(self._data, int(max_size))
 
+    def state_dict(self) -> dict:
+        return {
+            "capacity": int(self._capacity),
+            "data": list(self._data),
+            "add_calls": int(self._add_calls),
+        }
+
+    def load_state_dict(self, state: dict) -> None:
+        self._data = list(state["data"])
+        self._add_calls = int(state["add_calls"])
+
 
 class CircularReplay:
     """Bounded circular replay buffer for learned baseline targets."""
@@ -82,3 +93,14 @@ class CircularReplay:
         if len(self._data) <= max_size:
             return list(self._data)
         return random.sample(self._data, int(max_size))
+
+    def state_dict(self) -> dict:
+        return {
+            "capacity": int(self._capacity),
+            "data": list(self._data),
+            "idx": int(self._idx),
+        }
+
+    def load_state_dict(self, state: dict) -> None:
+        self._data = list(state["data"])
+        self._idx = int(state.get("idx", 0))

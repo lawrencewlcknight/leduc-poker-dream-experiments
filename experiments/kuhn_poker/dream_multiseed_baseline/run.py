@@ -20,7 +20,7 @@ except Exception:  # pragma: no cover
 
 from dream_poker.constants import KUHN_GAME_VALUE_P0
 from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
-from dream_poker.plotting import plot_mean_curve, plot_summary_bar
+from dream_poker.plotting import plot_mean_curve, plot_summary_bars
 from dream_poker.seeding import set_seed
 from dream_poker.solver import DREAMSolver
 from .config import EXPERIMENT_CONFIG
@@ -67,7 +67,7 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
         compute_exploitability=config["compute_exploitability"],
         seed=seed,
     )
-    curves = solver.solve()
+    curves = solver.solve(isolate_policy_training_rng=config.get("isolate_policy_training_rng", True))
     curves.insert(0, "seed", int(seed))
     curves.insert(1, "variant", "dream_baseline")
     seed_dir = ensure_dir(output_dir / f"seed_{seed}")
@@ -94,6 +94,8 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
         "iterations_to_threshold": int(reached.iloc[0]["iteration"]) if len(reached) else np.nan,
         "seconds_to_threshold": float(reached.iloc[0]["wall_clock_seconds"]) if len(reached) else np.nan,
+        "final_policy_training_events": int(final_row.get("policy_training_events", 0)),
+        "final_policy_gradient_steps_total": int(final_row.get("policy_gradient_steps_total", 0)),
     }
     with open(seed_dir / "seed_summary.json", "w") as f:
         json.dump(_json_ready(summary), f, indent=2)
@@ -124,7 +126,7 @@ def run_experiment(config: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, Path]:
     for col in [
         "final_exploitability", "best_exploitability", "final_window_mean_exploitability",
         "exploitability_auc_by_iteration", "final_policy_value_error", "final_wall_clock_seconds",
-        "final_nodes_touched",
+        "final_nodes_touched", "final_policy_gradient_steps_total",
     ]:
         aggregate[f"{col}_mean"] = safe_mean(summary_df[col])
         aggregate[f"{col}_se"] = standard_error(summary_df[col])

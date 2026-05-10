@@ -17,13 +17,52 @@ The repository is organised so that each experiment can be run independently whi
 │   ├── solver.py                                     # DREAM-style OpenSpiel solver
 │   ├── networks.py                                   # MLP networks for policy, advantage, baseline
 │   ├── replay.py                                     # Reservoir and circular replay buffers
+│   ├── checkpointing.py                              # Policy snapshots and head-to-head analysis
 │   ├── experiment_utils.py                           # Run-dir, metric, and export helpers
+│   ├── experiment_runner.py                          # Shared experiment-runner helpers
+│   ├── random_search.py                              # Staged solver-parameter search helpers
+│   ├── warm_start.py                                 # Warm-start paired-analysis helpers
+│   ├── lr_schedule.py                                # Learning-rate schedule ablation helpers
+│   ├── network_budget.py                             # Network-update budget ablation helpers
+│   ├── variant_ablation.py                           # Generic matched-variant ablation helpers
 │   ├── plotting.py                                   # Thesis-style plots
 │   ├── constants.py                                  # Kuhn value, thresholds, seed lists
 │   └── seeding.py                                    # PyTorch/NumPy/Python seeding helpers
 ├── experiments/
 │   └── kuhn_poker/
-│       └── dream_multiseed_baseline/                 # Experiment 1
+│       ├── dream_multiseed_baseline/                 # Experiment 1
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_final_only_policy_training_ablation/ # Experiment 2
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_checkpoint_stability/               # Experiment 3
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_constrained_random_search/          # Experiment 4
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_warm_start_ablation/                # Experiment 5
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_lr_schedule_ablation/               # Experiment 6
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_baseline_network_budget_ablation/   # Experiment 7
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_epsilon_exploration_ablation/       # Experiment 8
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_trajectories_per_iteration_ablation/ # Experiment 9
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -50,7 +89,71 @@ Runs the aligned DREAM-style baseline on OpenSpiel `kuhn_poker` across matched r
 
 **Question:** under a fixed training protocol, does the DREAM-style implementation learn a low-exploitability average policy in Kuhn poker, and how variable is the result across random seeds?
 
-Future DREAM ablations should be added as separate experiment folders under `experiments/kuhn_poker/`, while reusing the shared `dream_poker` package.
+### 2. DREAM final-only average-policy training ablation
+
+[`experiments/kuhn_poker/dream_final_only_policy_training_ablation/`](experiments/kuhn_poker/dream_final_only_policy_training_ablation/README.md)
+
+Runs the DREAM-style baseline with three average-policy extraction schedules: intermittent training every 25 iterations, final-only training for one policy-update event, and final-only training with the same total policy-gradient budget as the intermittent arm. The advantage and learned-baseline updates are held fixed.
+
+**Question:** does training the average-policy network intermittently during DREAM training affect measured exploitability, or is final-only policy extraction stable enough for evaluation and play through the OpenSpiel policy interface?
+
+### 3. DREAM checkpoint-stability head-to-head analysis
+
+[`experiments/kuhn_poker/dream_checkpoint_stability/`](experiments/kuhn_poker/dream_checkpoint_stability/README.md)
+
+Runs a two-stage checkpoint-stability experiment. The training stage saves lightweight average-policy network snapshots at fixed iterations. The analysis stage reloads those snapshots and computes exact pairwise, seat-averaged head-to-head expected values between checkpoints, alongside exploitability and monotonicity summaries.
+
+**Question:** do later DREAM average-policy checkpoints reliably beat earlier checkpoints in direct play, and does direct matchup strength agree with exploitability?
+
+### 4. DREAM constrained solver-parameter random search
+
+[`experiments/kuhn_poker/dream_constrained_random_search/`](experiments/kuhn_poker/dream_constrained_random_search/README.md)
+
+Runs a bounded two-stage random search over DREAM solver parameters, including traversal count, exploration rate, network width/depth, learning rate, replay-memory capacity, batch size, and supervised update budgets. Screening identifies promising configurations; confirmation reruns the baseline and selected candidates with a longer budget and matched seeds.
+
+**Question:** can DREAM performance in Kuhn poker be improved materially by tuning implementation and optimisation parameters while keeping the DREAM-style algorithm fixed?
+
+### 5. DREAM fair warm-start ablation
+
+[`experiments/kuhn_poker/dream_warm_start_ablation/`](experiments/kuhn_poker/dream_warm_start_ablation/README.md)
+
+Runs a paired continuous-vs-checkpoint/resume comparison. The warm-start arm saves the full DREAM solver state at an intermediate iteration, reloads it into a fresh solver, and resumes to the same final training budget as the continuous arm.
+
+**Question:** does checkpointing and resuming a DREAM run behave comparably to an otherwise identical continuous run, without extra data or optimisation?
+
+### 6. DREAM learning-rate schedule ablation
+
+[`experiments/kuhn_poker/dream_lr_schedule_ablation/`](experiments/kuhn_poker/dream_lr_schedule_ablation/README.md)
+
+Runs a paired constant-vs-decayed learning-rate comparison for the DREAM-style baseline. The OpenSpiel game, total training budget, traversal count, replay capacities, network architectures, supervised update budgets, average-policy training schedule, exploration rate, and matched seeds are held fixed; the intended treatment variable is only the optimiser learning-rate schedule.
+
+**Question:** does a decaying learning-rate schedule improve DREAM performance in Kuhn poker relative to the aligned constant-learning-rate baseline?
+
+### 7. DREAM baseline-network training-budget ablation
+
+[`experiments/kuhn_poker/dream_baseline_network_budget_ablation/`](experiments/kuhn_poker/dream_baseline_network_budget_ablation/README.md)
+
+Runs a matched-seed ablation over the number of supervised updates allocated to the learned baseline/control-variate networks. The DREAM baseline arm uses 100 baseline-network updates per player per iteration; comparison arms use 50, 200, and 500 updates while holding traversal budget, advantage-network training, average-policy training, architecture, replay capacity, learning rate, exploration, and seeds fixed.
+
+**Question:** is DREAM performance in Kuhn poker limited by baseline-network fitting budget, as measured by exploitability, policy-value error, baseline diagnostics, and advantage-target variance?
+
+### 8. DREAM epsilon-exploration ablation
+
+[`experiments/kuhn_poker/dream_epsilon_exploration_ablation/`](experiments/kuhn_poker/dream_epsilon_exploration_ablation/README.md)
+
+Runs a matched-seed ablation over the epsilon-mixed sampling policy used during DREAM outcome-sampling traversals. The DREAM baseline arm uses epsilon `0.06`; comparison arms use `0.03` and `0.10` while holding traversal budget, network training budgets, architecture, replay capacity, learning rate, average-policy training schedule, and seeds fixed.
+
+**Question:** how does the exploration rate affect game-tree coverage, target variance, policy extraction, and final exploitability in Kuhn poker?
+
+### 9. DREAM trajectories-per-iteration ablation
+
+[`experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/`](experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/README.md)
+
+Runs a matched-seed ablation over the number of outcome-sampling traversals per player per DREAM iteration. The DREAM baseline arm uses 320 traversals; comparison arms use 160 and 640 traversals while holding the training schedule, network budgets, architecture, replay capacity, learning rate, exploration rate, and seeds fixed.
+
+**Question:** does increasing trajectories per iteration improve DREAM performance in Kuhn poker, and does any gain remain when performance is measured by nodes touched or sampled trajectories rather than iteration count?
+
+Future DREAM ablations should be added as separate experiment folders under `experiments/kuhn_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
 
@@ -73,12 +176,130 @@ From the repository root:
 ```bash
 # Experiment 1 — full aligned DREAM-style baseline
 python -m experiments.kuhn_poker.dream_multiseed_baseline.run
+
+# Experiment 2 — final-only average-policy training ablation
+python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run
+
+# Experiment 3 — checkpoint-stability training plus head-to-head analysis
+python -m experiments.kuhn_poker.dream_checkpoint_stability.run
+
+# Experiment 4 — constrained solver-parameter random search
+python -m experiments.kuhn_poker.dream_constrained_random_search.run
+
+# Experiment 5 — fair warm-start/checkpoint-resume ablation
+python -m experiments.kuhn_poker.dream_warm_start_ablation.run
+
+# Experiment 6 — learning-rate schedule ablation
+python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run
+
+# Experiment 7 — baseline-network training-budget ablation
+python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run
+
+# Experiment 8 — epsilon-exploration ablation
+python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run
+
+# Experiment 9 — trajectories-per-iteration ablation
+python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run
 ```
 
 For a quick smoke test:
 
 ```bash
-python -m experiments.kuhn_poker.dream_multiseed_baseline.run       --seeds 1234,2025       --iterations 10       --traversals 50       --policy-network-train-steps 20       --advantage-network-train-steps 20       --baseline-network-train-steps 20       --evaluation-interval 5       --output-root outputs/smoke_tests/dream_multiseed_baseline
+python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_multiseed_baseline
+
+python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_final_only_policy_training_ablation
+
+python -m experiments.kuhn_poker.dream_checkpoint_stability.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --checkpoint-schedule 5,10 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_checkpoint_stability
+
+python -m experiments.kuhn_poker.dream_constrained_random_search.run \
+  --screening-seeds 1234 \
+  --confirmation-seeds 1234 \
+  --screening-iterations 5 \
+  --confirmation-iterations 5 \
+  --n-random-candidates 1 \
+  --n-confirmation-candidates 1 \
+  --num-traversals 20 \
+  --policy-network-train-steps 5 \
+  --advantage-network-train-steps 5 \
+  --baseline-network-train-steps 5 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_constrained_random_search
+
+python -m experiments.kuhn_poker.dream_warm_start_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --warm-start-iteration 5 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_warm_start_ablation
+
+python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_lr_schedule_ablation
+
+python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --variants baseline_steps_50,baseline_steps_100_exp_baseline \
+  --output-root outputs/smoke_tests/dream_baseline_network_budget_ablation
+
+python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_epsilon_exploration_ablation
+
+python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --variants traversals_160,traversals_320_exp_baseline \
+  --output-root outputs/smoke_tests/dream_trajectories_per_iteration_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. The key files are:
@@ -95,6 +316,136 @@ policy_loss_diagnostic.png
 advantage_target_variance_diagnostic.png
 baseline_reward_variance_diagnostic.png
 summary_metrics.png
+```
+
+Variant ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_intermediate_baseline.csv
+plots/dream_policy_training_final_exploitability.png
+plots/dream_policy_training_paired_delta_exploitability.png
+```
+
+Checkpoint-stability experiments additionally export:
+
+```text
+policy_snapshots/kuhn_poker_dream_seed_<seed>_policy_snapshot_<iteration>_iters.pt
+head_to_head_analysis/checkpoint_inventory.csv
+head_to_head_analysis/checkpoint_exploitability_metrics.csv
+head_to_head_analysis/head_to_head_exact_pairwise.csv
+head_to_head_analysis/head_to_head_exact_mean_matrix.csv
+head_to_head_analysis/head_to_head_seed_win_fraction_matrix.csv
+head_to_head_analysis/head_to_head_monotonicity_summary_by_seed.csv
+head_to_head_analysis/head_to_head_strength_with_metrics.csv
+head_to_head_analysis/head_to_head_aggregate_strength_summary.csv
+head_to_head_analysis/best_checkpoint_summary.csv
+head_to_head_analysis/plots/dream_head_to_head_exact_mean_matrix.png
+```
+
+Random-search experiments additionally export:
+
+```text
+screening_configs.json
+confirmation_configs.json
+tables/screening_run_summaries.csv
+tables/screening_curves.csv
+tables/screening_config_summary.csv
+tables/confirmation_run_summaries.csv
+tables/confirmation_curves.csv
+tables/confirmation_config_summary.csv
+tables/confirmation_paired_differences_final_exploitability.csv
+traces/<stage>/<config_label>/seed_<seed>_curves.csv
+plots/screening_ranked_final_window_exploitability.png
+plots/confirmation_final_exploitability.png
+plots/confirmation_exploitability_by_iteration.png
+```
+
+Warm-start ablations additionally export:
+
+```text
+checkpoint_curves_by_arm.csv
+seed_arm_summary.csv
+aggregate_summary_by_arm.csv
+aggregate_summary_by_arm.json
+paired_differences_warm_minus_baseline.csv
+paired_difference_summary.json
+seed_<seed>/warm_start_resume/checkpoint/dream_checkpoint_iter_<iteration>.pt
+plots/dream_warm_start_exploitability_by_iteration.png
+plots/dream_warm_start_paired_final_exploitability_delta.png
+```
+
+Learning-rate schedule ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_lr_schedule_exploitability_by_iteration.png
+plots/dream_lr_schedule_final_exploitability.png
+plots/dream_lr_schedule_paired_final_exploitability_delta.png
+plots/dream_lr_schedule_learning_rate_schedules.png
+```
+
+Network-training budget ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_baseline_budget_exploitability_by_iteration.png
+plots/dream_baseline_budget_final_exploitability.png
+plots/dream_baseline_budget_baseline_loss.png
+plots/dream_baseline_budget_advantage_target_variance.png
+plots/dream_baseline_budget_paired_final_exploitability_delta.png
+```
+
+Scalar-parameter ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_epsilon_exploration_exploitability_by_iteration.png
+plots/dream_epsilon_exploration_final_exploitability.png
+plots/dream_epsilon_exploration_advantage_target_variance.png
+plots/dream_epsilon_exploration_policy_entropy_mean.png
+plots/dream_epsilon_exploration_paired_final_exploitability_delta.png
+```
+
+Trajectory-count ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_trajectories_per_iteration_exploitability_by_iteration.png
+plots/dream_trajectories_per_iteration_exploitability_by_nodes.png
+plots/dream_trajectories_per_iteration_exploitability_by_sampled_trajectories.png
+plots/dream_trajectories_per_iteration_paired_sample_trajectory_auc_delta.png
 ```
 
 ## Notes for adding future experiments
