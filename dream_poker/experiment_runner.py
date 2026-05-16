@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Sequence, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -50,7 +50,7 @@ def write_json(path: Path, obj) -> None:
         json.dump(json_ready(obj), f, indent=2)
 
 
-def create_timestamped_output_dir(output_root: str | Path) -> Path:
+def create_timestamped_output_dir(output_root: Union[str, Path]) -> Path:
     root = ensure_dir(output_root)
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     return ensure_dir(root / run_id)

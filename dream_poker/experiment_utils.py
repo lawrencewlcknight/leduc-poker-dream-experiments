@@ -2,11 +2,11 @@
 """Shared experiment utilities."""
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 import numpy as np
 
 
-def ensure_dir(path: str | Path) -> Path:
+def ensure_dir(path: Union[str, Path]) -> Path:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
