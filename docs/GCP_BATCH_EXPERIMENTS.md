@@ -427,6 +427,12 @@ The script prints the Batch script before submission. Check that:
 gsutil -m cp -r outputs "gs://your-project-id-kuhn-poker-dream-results/dream-smoke-baseline-.../"
 ```
 
+After submitting the smoke test, this command can be used to see whether the experiment is queued or running:
+
+```bash
+gcloud batch jobs list --location "$REGION"
+```
+
 ---
 
 ## 8. Monitor a Batch job
