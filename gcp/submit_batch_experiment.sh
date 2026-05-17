@@ -104,6 +104,7 @@ source /tmp/kuhn-dream-venv/bin/activate
 
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir --no-build-isolation -r requirements.txt
+# Skipping editable install: this repo is run from the repository root.
 python -m pip check || true
 
 mkdir -p "outputs/cloud/{job_name}"

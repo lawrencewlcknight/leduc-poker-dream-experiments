@@ -70,6 +70,8 @@ The repository is organised so that each experiment can be run independently whi
 │   └── OUTPUT_CONVENTIONS.md
 ├── notebooks/                                       # Original notebook archive
 ├── outputs/                                         # Experiment outputs (gitignored)
+├── scripts/                                         # Utility scripts
+├── thesis_artifacts/                                # Curated thesis-facing artifacts
 ├── tests/                                           # Lightweight import/unit tests
 ├── venv/                                            # Placeholder only; environment not committed
 ├── pyproject.toml
@@ -302,7 +304,9 @@ python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run \
   --output-root outputs/smoke_tests/dream_trajectories_per_iteration_ablation
 ```
 
-Outputs are written to a timestamped subdirectory under `outputs/` by default. The key files are:
+Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).
+
+The key files are:
 
 ```text
 seed_summary.csv

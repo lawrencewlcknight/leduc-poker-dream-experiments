@@ -293,6 +293,7 @@ source /tmp/kuhn-dream-venv/bin/activate
 
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir --no-build-isolation -r requirements.txt
+# Skipping editable install: this repo is run from the repository root.
 python -m pip check || true
 
 mkdir -p "outputs/cloud/{job_name}"
@@ -449,6 +450,8 @@ Describe one job:
 gcloud batch jobs describe JOB_NAME --location "$REGION"
 ```
 
+After an experiment has completed, the output from `gcloud batch jobs describe JOB_NAME --location "$REGION"` can also be used to determine how long the Batch job took to run. Review the job status events and timestamp fields in the describe output to compare the start and completion times.
+
 Possible states include:
 
 - `QUEUED`
@@ -469,6 +472,15 @@ Copy outputs back to your local machine:
 mkdir -p cloud_outputs/JOB_NAME
 gcloud storage cp -r "$BUCKET/JOB_NAME/*" "cloud_outputs/JOB_NAME/"
 ```
+
+After reviewing the downloaded outputs, promote only lightweight thesis-facing artifacts into the tracked repo:
+
+```bash
+python scripts/promote_thesis_artifacts.py cloud_outputs/JOB_NAME --dry-run
+python scripts/promote_thesis_artifacts.py cloud_outputs/JOB_NAME
+```
+
+See `docs/THESIS_ARTIFACTS.md` for the full local promotion workflow. Full cloud outputs should remain scratch data unless specific lightweight artifacts are intentionally promoted.
 
 ---
 
