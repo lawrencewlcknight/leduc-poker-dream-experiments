@@ -74,6 +74,7 @@ By default it excludes:
 *.npz
 *.log
 failed_seeds.json
+failed_runs.json
 checkpoints/*
 snapshots/*
 traces/*
@@ -93,6 +94,7 @@ Each promoted run receives a `promotion_manifest.json` file. It records:
 
 - source and destination paths;
 - selected files;
+- copied files;
 - skipped files;
 - promotion timestamp;
 - whether `--dry-run` was used;

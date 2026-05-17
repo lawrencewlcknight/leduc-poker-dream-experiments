@@ -32,6 +32,7 @@ DEFAULT_EXCLUDE_PATTERNS = [
     "*.npz",
     "*.log",
     "failed_seeds.json",
+    "failed_runs.json",
     "checkpoints/*",
     "snapshots/*",
     "traces/*",
@@ -117,7 +118,8 @@ def copy_selected_files(
     dest_run_dir: Path,
     overwrite: bool,
     dry_run: bool,
-) -> Tuple[List[Dict[str, str]], List[Dict[str, str]]]:
+) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+    selected: List[Dict[str, str]] = []
     copied: List[Dict[str, str]] = []
     skipped_existing: List[Dict[str, str]] = []
     for source_path in selected_files:
@@ -128,6 +130,7 @@ def copy_selected_files(
             "destination": str(dest_path),
             "relative_path": rel.as_posix(),
         }
+        selected.append(record)
         if dest_path.exists() and not overwrite:
             skipped_existing.append(
                 {
@@ -137,12 +140,12 @@ def copy_selected_files(
                 }
             )
             continue
-        copied.append(record)
         if dry_run:
             continue
+        copied.append(record)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, dest_path)
-    return copied, skipped_existing
+    return selected, copied, skipped_existing
 
 
 def write_manifest(dest_run_dir: Path, manifest: Dict, dry_run: bool) -> None:
@@ -167,7 +170,13 @@ def promote_run(
     experiment_name = infer_experiment_name(run_dir, metadata)
     dest_run_dir = dest_root / experiment_name / run_dir.name
     selected, skipped = classify_files(run_dir, include_patterns, exclude_patterns)
-    copied, skipped_existing = copy_selected_files(selected, run_dir, dest_run_dir, overwrite, dry_run)
+    selected_records, copied, skipped_existing = copy_selected_files(
+        selected,
+        run_dir,
+        dest_run_dir,
+        overwrite,
+        dry_run,
+    )
     skipped.extend(skipped_existing)
     manifest = {
         "promoted_at": datetime.now(timezone.utc).isoformat(),
@@ -181,7 +190,8 @@ def promote_run(
         "exclude_patterns": list(exclude_patterns),
         "dry_run": bool(dry_run),
         "overwrite": bool(overwrite),
-        "selected_files": copied,
+        "selected_files": selected_records,
+        "copied_files": copied,
         "skipped_files": skipped,
     }
     write_manifest(dest_run_dir, manifest, dry_run)

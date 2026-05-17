@@ -8,7 +8,17 @@ __pycache__/
 outputs/*
 !outputs/.gitkeep
 cloud_outputs/
+chart_exports/
 venv/*
 !venv/PLACEHOLDER.md
 .venv/
 .ipynb_checkpoints/
+*.pt
+*.pth
+*.npz
+*.log
+failed_seeds.json
+failed_runs.json
+checkpoints/
+snapshots/
+traces/
