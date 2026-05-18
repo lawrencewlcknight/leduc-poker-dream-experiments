@@ -122,7 +122,7 @@ def run_experiment(config: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     write_json(output_dir / "aggregate_summary_by_arm.json", aggregate_df.to_dict(orient="records"))
     write_json(output_dir / "paired_difference_summary.json", paired_difference_summary(paired_df))
 
-    create_warm_start_plots(curves_df, summary_df, paired_df, output_dir)
+    create_warm_start_plots(curves_df, summary_df, paired_df, output_dir, config)
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir
 
@@ -176,4 +176,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

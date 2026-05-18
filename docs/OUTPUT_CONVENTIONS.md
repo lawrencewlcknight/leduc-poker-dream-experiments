@@ -101,6 +101,9 @@ The core metric names should remain stable across experiments:
 - `exploitability`
 - `nash_conv`
 - `policy_value_player_0`
+- `average_policy_value`
+- `average_policy_value_target`
+- `average_policy_value_error`
 - `policy_value_error`
 - `nodes_touched`
 - `wall_clock_seconds`
@@ -113,6 +116,8 @@ The core metric names should remain stable across experiments:
 - `baseline_loss_mean`
 - `baseline_reward_variance_sampled`
 - `epsilon`
+
+`policy_value_player_0` is the raw OpenSpiel player-0 value. `average_policy_value` uses the same player-0 convention for headline charts. In Kuhn poker the default plotted target is `-1/18` (approximately `-0.0556`). The target is configured per experiment through `average_policy_value_target` so the same plotting code can be reused for games with a different equilibrium value.
 - `num_traversals`
 - `sampled_trajectories`
 - `trajectories_per_iteration`

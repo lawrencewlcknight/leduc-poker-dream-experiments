@@ -23,9 +23,15 @@ except Exception:  # pragma: no cover
     expected_game_score = None
     exploitability = None
 
-from dream_poker.constants import KUHN_GAME_VALUE_P0
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET, KUHN_GAME_VALUE_P0
 from dream_poker.experiment_utils import ensure_dir
 from dream_poker.networks import MLP
+from dream_poker.plotting import (
+    add_average_policy_value_target,
+    add_nash_exploitability_target,
+    is_average_policy_value_metric,
+    is_exploitability_metric,
+)
 
 
 CHECKPOINT_PATTERN = re.compile(
@@ -184,14 +190,19 @@ def checkpoint_exploitability_metrics(game, policies_by_seed: Dict[str, Dict[int
             value = float(
                 expected_game_score.policy_value(game.new_initial_state(), [tab_policy] * game.num_players())[0]
             )
+            average_policy_value = value
             metric_rows.append(
                 {
                     "seed": str(seed),
                     "checkpoint": int(checkpoint),
                     "nash_conv": nash_conv,
                     "exploitability": nash_conv / 2.0,
-                    "average_policy_value": value,
+                    "policy_value_player_0": value,
+                    "average_policy_value": average_policy_value,
                     "policy_value_error_from_known_value": abs(value - KUHN_GAME_VALUE_P0),
+                    "average_policy_value_error_from_target": abs(
+                        average_policy_value - KUHN_AVERAGE_POLICY_VALUE_TARGET
+                    ),
                 }
             )
     return pd.DataFrame(metric_rows).sort_values(["seed", "checkpoint"])
@@ -345,6 +356,7 @@ def checkpoint_strength_summaries(
         "mean_EV_vs_earlier",
         "EV_vs_previous",
         "exploitability",
+        "average_policy_value",
         "policy_value_error_from_known_value",
     ]
     aggregate_strength_df = strength_with_metrics_df.groupby("checkpoint")[agg_cols].agg(["mean", "sem"]).reset_index()
@@ -413,13 +425,20 @@ def plot_errorbar(
     title: str,
     output_path: Path,
     zero_line: bool = True,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
     x = df["checkpoint"].to_numpy(dtype=float)
     y = df[y_mean_col].to_numpy(dtype=float)
     yerr = df[y_sem_col].fillna(0.0).to_numpy(dtype=float)
     ax.errorbar(x, y, yerr=yerr, marker="o", capsize=3)
-    if zero_line:
+    if is_exploitability_metric(y_mean_col):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif is_average_policy_value_metric(y_mean_col.replace("_mean", "")):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
+    elif zero_line:
         ax.axhline(0.0, linestyle="--", linewidth=1)
     ax.set_xlabel("Checkpoint iteration")
     ax.set_ylabel(ylabel)

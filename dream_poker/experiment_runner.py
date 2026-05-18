@@ -15,7 +15,13 @@ try:
 except Exception:  # pragma: no cover
     pyspiel = None
 
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import (
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
 from dream_poker.seeding import set_seed
 from dream_poker.solver import DREAMSolver
 
@@ -24,6 +30,8 @@ CORE_SUMMARY_METRICS = [
     "final_exploitability",
     "best_exploitability",
     "final_window_mean_exploitability",
+    "final_average_policy_value",
+    "final_window_mean_average_policy_value",
     "exploitability_auc_by_iteration",
     "final_policy_value_error",
     "final_wall_clock_seconds",
@@ -116,6 +124,7 @@ def summarise_seed_curves(
     config: Dict,
     final_policy_steps: Optional[int] = None,
 ) -> Dict:
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final_row = curves.iloc[-1]
     final_window = curves.tail(min(5, len(curves)))
     reached = curves[curves["exploitability"] <= config["exploitability_threshold"]]
@@ -139,6 +148,9 @@ def summarise_seed_curves(
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -165,6 +177,7 @@ def run_dream_variant_seed(
         final_policy_network_train_steps=final_steps,
         isolate_policy_training_rng=config.get("isolate_policy_training_rng", True),
     )
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     curves.insert(0, "seed", int(seed))
     curves.insert(1, "variant", variant["variant_id"])
     curves.insert(2, "variant_label", variant.get("label", variant["variant_id"]))

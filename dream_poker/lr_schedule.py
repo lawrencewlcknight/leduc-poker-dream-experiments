@@ -10,7 +10,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.experiment_utils import (
+    average_policy_value_target,
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
+from dream_poker.plotting import (
+    add_average_policy_value_target,
+    add_nash_exploitability_target,
+    is_average_policy_value_metric,
+    is_exploitability_metric,
+)
 
 
 def scheduled_learning_rate(
@@ -43,6 +57,7 @@ def summarise_lr_schedule_curve(
     schedule_config: Dict,
     config: Dict,
 ) -> Dict:
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final_row = curves.iloc[-1]
     final_window = curves.tail(min(5, len(curves)))
     reached = curves[curves["exploitability"] <= config["exploitability_threshold"]]
@@ -65,6 +80,9 @@ def summarise_lr_schedule_curve(
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -84,6 +102,8 @@ def lr_schedule_paired_differences(summary_df: pd.DataFrame, baseline_variant: s
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "exploitability_auc_by_iteration",
         "final_policy_value_error",
         "final_wall_clock_seconds",
@@ -110,6 +130,8 @@ def aggregate_lr_schedule_summary(summary_df: pd.DataFrame) -> pd.DataFrame:
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "exploitability_auc_by_iteration",
         "final_policy_value_error",
         "final_wall_clock_seconds",
@@ -150,6 +172,7 @@ def create_lr_schedule_plots(
     output_dir: Path,
 ) -> None:
     plots_dir = ensure_dir(output_dir / "plots")
+    value_target = average_policy_value_target(config)
     plot_variant_mean_curve(
         curves_df,
         "iteration",
@@ -165,6 +188,24 @@ def create_lr_schedule_plots(
         "DREAM learning-rate schedule ablation: exploitability by nodes touched",
         "Exploitability",
         plots_dir / "dream_lr_schedule_exploitability_by_nodes.png",
+    )
+    plot_variant_mean_curve(
+        curves_df,
+        "iteration",
+        "average_policy_value",
+        "DREAM learning-rate schedule ablation: average policy value by iteration",
+        "Average policy value",
+        plots_dir / "dream_lr_schedule_average_policy_value_by_iteration.png",
+        average_policy_value_target=value_target,
+    )
+    plot_variant_mean_curve(
+        curves_df,
+        "nodes_touched",
+        "average_policy_value",
+        "DREAM learning-rate schedule ablation: average policy value by nodes touched",
+        "Average policy value",
+        plots_dir / "dream_lr_schedule_average_policy_value_by_nodes.png",
+        average_policy_value_target=value_target,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -209,6 +250,14 @@ def create_lr_schedule_plots(
     )
     plot_final_metric_bar(
         summary_df,
+        "final_average_policy_value",
+        "Final average policy value by learning-rate schedule",
+        "Final average policy value",
+        plots_dir / "dream_lr_schedule_final_average_policy_value.png",
+        average_policy_value_target=value_target,
+    )
+    plot_final_metric_bar(
+        summary_df,
         "exploitability_auc_by_iteration",
         "Exploitability AUC by learning-rate schedule",
         "Normalised AUC",
@@ -221,6 +270,13 @@ def create_lr_schedule_plots(
             "Paired final-exploitability difference versus constant baseline",
             "Delta exploitability",
             plots_dir / "dream_lr_schedule_paired_final_exploitability_delta.png",
+        )
+        plot_paired_delta(
+            paired_df,
+            "final_average_policy_value",
+            "Paired final average-policy-value difference versus constant baseline",
+            "Delta average policy value",
+            plots_dir / "dream_lr_schedule_paired_final_average_policy_value_delta.png",
         )
         plot_paired_delta(
             paired_df,
@@ -243,6 +299,7 @@ def plot_variant_mean_curve(
     title: str,
     ylabel: str,
     output_path: Path,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for variant, variant_df in curves_df.groupby("variant"):
@@ -256,6 +313,10 @@ def plot_variant_mean_curve(
         se_y = se.to_numpy(dtype=float)
         ax.plot(x, y, linewidth=2.2, label=variant)
         ax.fill_between(x, y - se_y, y + se_y, alpha=0.14)
+    if is_exploitability_metric(y_col):
+        add_nash_exploitability_target(ax)
+    elif is_average_policy_value_metric(y_col):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
     ax.set_title(title)
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
@@ -272,6 +333,7 @@ def plot_final_metric_bar(
     title: str,
     ylabel: str,
     output_path: Path,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     grouped = summary_df.groupby("variant")[metric]
     means = grouped.mean()
@@ -279,6 +341,12 @@ def plot_final_metric_bar(
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     positions = np.arange(len(means))
     ax.bar(positions, means.to_numpy(dtype=float), yerr=ses.to_numpy(dtype=float), capsize=5)
+    if is_exploitability_metric(metric):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif is_average_policy_value_metric(metric):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
     ax.set_xticks(positions)
     ax.set_xticklabels(means.index.tolist(), rotation=20, ha="right")
     ax.set_ylabel(ylabel)

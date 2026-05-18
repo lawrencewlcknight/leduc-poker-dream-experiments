@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, ensure_dir
 from dream_poker.variant_ablation import (
     add_variant_curve_columns,
     aggregate_variant_summary,
@@ -129,6 +129,7 @@ def run_experiment(
             ("policy_entropy_mean", "Average-Policy Entropy", "Policy entropy"),
             ("strategy_buffer_size", "Strategy-Memory Size", "Strategy-memory entries"),
         ],
+        average_policy_value_target=average_policy_value_target(config),
     )
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir

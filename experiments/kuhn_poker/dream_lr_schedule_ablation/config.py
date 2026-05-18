@@ -5,6 +5,7 @@ from pathlib import Path
 from dream_poker.constants import (
     DEFAULT_SEEDS_5,
     EXPLOITABILITY_THRESHOLD,
+    KUHN_AVERAGE_POLICY_VALUE_TARGET,
     KUHN_GAME_VALUE_P0,
     SMOKE_TEST_SEEDS,
     THESIS_SEEDS_10,
@@ -40,6 +41,7 @@ EXPERIMENT_CONFIG = {
     "optional_development_seeds_5": DEFAULT_SEEDS_5,
     "optional_thesis_seeds_10": THESIS_SEEDS_10,
     "kuhn_game_value_player_0": KUHN_GAME_VALUE_P0,
+    "average_policy_value_target": KUHN_AVERAGE_POLICY_VALUE_TARGET,
     "exploitability_threshold": EXPLOITABILITY_THRESHOLD,
     "output_root": Path("outputs") / "dream_lr_schedule_ablation",
 }
@@ -75,4 +77,3 @@ SMOKE_TEST_CONFIG_OVERRIDES = {
     "evaluation_interval": 5,
     "output_root": Path("outputs") / "smoke_tests" / "dream_lr_schedule_ablation",
 }
-

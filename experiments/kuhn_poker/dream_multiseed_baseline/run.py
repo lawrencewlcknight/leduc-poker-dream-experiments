@@ -18,8 +18,14 @@ try:
 except Exception:  # pragma: no cover
     pyspiel = None
 
-from dream_poker.constants import KUHN_GAME_VALUE_P0
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import (
+    average_policy_value_target,
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
 from dream_poker.plotting import plot_mean_curve, plot_summary_bars
 from dream_poker.seeding import set_seed
 from dream_poker.solver import DREAMSolver
@@ -68,6 +74,7 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
         seed=seed,
     )
     curves = solver.solve(isolate_policy_training_rng=config.get("isolate_policy_training_rng", True))
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     curves.insert(0, "seed", int(seed))
     curves.insert(1, "variant", "dream_baseline")
     seed_dir = ensure_dir(output_dir / f"seed_{seed}")
@@ -89,6 +96,9 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -125,6 +135,7 @@ def run_experiment(config: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, Path]:
     aggregate = {}
     for col in [
         "final_exploitability", "best_exploitability", "final_window_mean_exploitability",
+        "final_average_policy_value", "final_window_mean_average_policy_value",
         "exploitability_auc_by_iteration", "final_policy_value_error", "final_wall_clock_seconds",
         "final_nodes_touched", "final_policy_gradient_steps_total",
     ]:
@@ -133,12 +144,13 @@ def run_experiment(config: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, Path]:
     with open(output_dir / "aggregate_summary.json", "w") as f:
         json.dump(_json_ready(aggregate), f, indent=2)
 
-    make_plots(curves_df, summary_df, output_dir)
+    make_plots(curves_df, summary_df, output_dir, config)
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, output_dir
 
 
-def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Path) -> None:
+def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Path, config: Dict) -> None:
+    value_target = average_policy_value_target(config)
     plot_mean_curve(
         curves_df, "iteration", "exploitability",
         "DREAM baseline exploitability by iteration", "Exploitability",
@@ -148,6 +160,18 @@ def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Pa
         curves_df, "nodes_touched", "exploitability",
         "DREAM baseline exploitability by nodes touched", "Exploitability",
         output_dir / "exploitability_by_nodes_multiseed.png",
+    )
+    plot_mean_curve(
+        curves_df, "iteration", "average_policy_value",
+        "DREAM baseline average policy value by iteration", "Average policy value",
+        output_dir / "average_policy_value_by_iteration_multiseed.png",
+        average_policy_value_target=value_target,
+    )
+    plot_mean_curve(
+        curves_df, "nodes_touched", "average_policy_value",
+        "DREAM baseline average policy value by nodes touched", "Average policy value",
+        output_dir / "average_policy_value_by_nodes_multiseed.png",
+        average_policy_value_target=value_target,
     )
     plot_mean_curve(
         curves_df, "iteration", "policy_value_error",
@@ -177,6 +201,13 @@ def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Pa
         ["final_exploitability", "best_exploitability", "final_window_mean_exploitability"],
         "DREAM baseline summary metrics",
         output_dir / "summary_metrics.png",
+    )
+    plot_summary_bars(
+        summary_df,
+        ["final_average_policy_value", "final_window_mean_average_policy_value"],
+        "DREAM baseline average policy value summary",
+        output_dir / "average_policy_value_summary_metrics.png",
+        average_policy_value_target=value_target,
     )
 
 

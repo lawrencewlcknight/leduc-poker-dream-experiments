@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, ensure_dir
 from dream_poker.network_budget import (
     add_budget_curve_columns,
     aggregate_network_budget_summary,
@@ -119,6 +119,7 @@ def run_experiment(
         output_dir,
         plot_prefix="dream_baseline_budget",
         title_prefix="DREAM Baseline-Network Budget Ablation",
+        average_policy_value_target=average_policy_value_target(config),
     )
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir

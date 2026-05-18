@@ -315,6 +315,8 @@ checkpoint_curves.csv
 experiment_metadata.json
 exploitability_by_iteration_multiseed.png
 exploitability_by_nodes_multiseed.png
+average_policy_value_by_iteration_multiseed.png
+average_policy_value_by_nodes_multiseed.png
 policy_value_error_multiseed.png
 policy_loss_diagnostic.png
 advantage_target_variance_diagnostic.png
@@ -331,6 +333,8 @@ aggregate_summary_by_variant.csv
 aggregate_summary_by_variant.json
 paired_differences_vs_intermediate_baseline.csv
 plots/dream_policy_training_final_exploitability.png
+plots/dream_policy_training_final_average_policy_value.png
+plots/dream_policy_training_average_policy_value_by_iteration.png
 plots/dream_policy_training_paired_delta_exploitability.png
 ```
 
@@ -348,6 +352,7 @@ head_to_head_analysis/head_to_head_strength_with_metrics.csv
 head_to_head_analysis/head_to_head_aggregate_strength_summary.csv
 head_to_head_analysis/best_checkpoint_summary.csv
 head_to_head_analysis/plots/dream_head_to_head_exact_mean_matrix.png
+head_to_head_analysis/plots/dream_checkpoint_average_policy_value_aggregate.png
 ```
 
 Random-search experiments additionally export:
@@ -362,10 +367,13 @@ tables/confirmation_run_summaries.csv
 tables/confirmation_curves.csv
 tables/confirmation_config_summary.csv
 tables/confirmation_paired_differences_final_exploitability.csv
+tables/confirmation_paired_differences_final_average_policy_value.csv
 traces/<stage>/<config_label>/seed_<seed>_curves.csv
 plots/screening_ranked_final_window_exploitability.png
 plots/confirmation_final_exploitability.png
 plots/confirmation_exploitability_by_iteration.png
+plots/confirmation_final_average_policy_value.png
+plots/confirmation_average_policy_value_by_iteration.png
 ```
 
 Warm-start ablations additionally export:
@@ -379,6 +387,8 @@ paired_differences_warm_minus_baseline.csv
 paired_difference_summary.json
 seed_<seed>/warm_start_resume/checkpoint/dream_checkpoint_iter_<iteration>.pt
 plots/dream_warm_start_exploitability_by_iteration.png
+plots/dream_warm_start_average_policy_value_by_iteration.png
+plots/dream_warm_start_final_average_policy_value.png
 plots/dream_warm_start_paired_final_exploitability_delta.png
 ```
 
@@ -395,6 +405,8 @@ multiseed_curves_by_variant.npz
 seed_<seed>/<variant>/checkpoint_curves.csv
 plots/dream_lr_schedule_exploitability_by_iteration.png
 plots/dream_lr_schedule_final_exploitability.png
+plots/dream_lr_schedule_average_policy_value_by_iteration.png
+plots/dream_lr_schedule_final_average_policy_value.png
 plots/dream_lr_schedule_paired_final_exploitability_delta.png
 plots/dream_lr_schedule_learning_rate_schedules.png
 ```
@@ -412,6 +424,8 @@ multiseed_curves_by_variant.npz
 seed_<seed>/<variant>/checkpoint_curves.csv
 plots/dream_baseline_budget_exploitability_by_iteration.png
 plots/dream_baseline_budget_final_exploitability.png
+plots/dream_baseline_budget_average_policy_value_by_iteration.png
+plots/dream_baseline_budget_final_average_policy_value.png
 plots/dream_baseline_budget_baseline_loss.png
 plots/dream_baseline_budget_advantage_target_variance.png
 plots/dream_baseline_budget_paired_final_exploitability_delta.png
@@ -430,6 +444,8 @@ multiseed_curves_by_variant.npz
 seed_<seed>/<variant>/checkpoint_curves.csv
 plots/dream_epsilon_exploration_exploitability_by_iteration.png
 plots/dream_epsilon_exploration_final_exploitability.png
+plots/dream_epsilon_exploration_average_policy_value_by_iteration.png
+plots/dream_epsilon_exploration_final_average_policy_value.png
 plots/dream_epsilon_exploration_advantage_target_variance.png
 plots/dream_epsilon_exploration_policy_entropy_mean.png
 plots/dream_epsilon_exploration_paired_final_exploitability_delta.png
@@ -449,6 +465,9 @@ seed_<seed>/<variant>/checkpoint_curves.csv
 plots/dream_trajectories_per_iteration_exploitability_by_iteration.png
 plots/dream_trajectories_per_iteration_exploitability_by_nodes.png
 plots/dream_trajectories_per_iteration_exploitability_by_sampled_trajectories.png
+plots/dream_trajectories_per_iteration_average_policy_value_by_iteration.png
+plots/dream_trajectories_per_iteration_average_policy_value_by_nodes.png
+plots/dream_trajectories_per_iteration_average_policy_value_by_sampled_trajectories.png
 plots/dream_trajectories_per_iteration_paired_sample_trajectory_auc_delta.png
 ```
 

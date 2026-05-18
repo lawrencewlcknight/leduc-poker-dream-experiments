@@ -2,7 +2,11 @@
 
 from pathlib import Path
 
-from dream_poker.constants import EXPLOITABILITY_THRESHOLD, KUHN_GAME_VALUE_P0
+from dream_poker.constants import (
+    EXPLOITABILITY_THRESHOLD,
+    KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    KUHN_GAME_VALUE_P0,
+)
 
 
 EXPERIMENT_NAME = "kuhn_poker_dream_constrained_random_search"
@@ -31,6 +35,7 @@ DREAM_BASELINE_CONFIG = {
     "policy_network_train_every": 25,
     "compute_exploitability": True,
     "isolate_policy_training_rng": True,
+    "average_policy_value_target": KUHN_AVERAGE_POLICY_VALUE_TARGET,
 }
 
 
@@ -58,6 +63,7 @@ FIXED_PARAMETERS = {
     "compute_exploitability": True,
     "game_name": DREAM_BASELINE_CONFIG["game_name"],
     "isolate_policy_training_rng": True,
+    "average_policy_value_target": KUHN_AVERAGE_POLICY_VALUE_TARGET,
 }
 
 
@@ -76,6 +82,7 @@ EXPERIMENT_CONFIG = {
     "n_random_candidates": 8,
     "n_confirmation_candidates": 3,
     "kuhn_game_value_player_0": KUHN_GAME_VALUE_P0,
+    "average_policy_value_target": KUHN_AVERAGE_POLICY_VALUE_TARGET,
     "exploitability_threshold": EXPLOITABILITY_THRESHOLD,
     "output_root": Path("outputs") / "dream_constrained_random_search",
 }
@@ -90,4 +97,3 @@ SMOKE_TEST_CONFIG_OVERRIDES = {
     "n_confirmation_candidates": 1,
     "output_root": Path("outputs") / "smoke_tests" / "dream_constrained_random_search",
 }
-

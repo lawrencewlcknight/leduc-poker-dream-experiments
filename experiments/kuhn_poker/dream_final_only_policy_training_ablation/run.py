@@ -18,7 +18,7 @@ from dream_poker.experiment_runner import (
     run_dream_variant_seed,
     write_json,
 )
-from dream_poker.experiment_utils import ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, ensure_dir
 from dream_poker.plotting import (
     plot_curve_by_variant,
     plot_metric_bar_by_variant,
@@ -33,6 +33,8 @@ PAIRED_METRICS = [
     "final_exploitability",
     "best_exploitability",
     "final_window_mean_exploitability",
+    "final_average_policy_value",
+    "final_window_mean_average_policy_value",
     "final_policy_value_error",
     "final_wall_clock_seconds",
     "final_policy_gradient_steps_total",
@@ -41,6 +43,7 @@ AGGREGATE_METRICS = CORE_SUMMARY_METRICS + [
     "final_policy_gradient_steps_total",
     "final_policy_loss",
     "final_policy_entropy_mean",
+    "final_average_policy_value_error",
 ]
 
 
@@ -69,7 +72,7 @@ def run_experiment(config: Dict) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     aggregate_df.to_csv(output_dir / "aggregate_summary_by_variant.csv", index=False)
     write_json(output_dir / "aggregate_summary_by_variant.json", aggregate_df.to_dict(orient="records"))
 
-    make_plots(curves_df, summary_df, paired_df, output_dir, variants)
+    make_plots(curves_df, summary_df, paired_df, output_dir, variants, config)
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir
 
@@ -80,8 +83,10 @@ def make_plots(
     paired_df: pd.DataFrame,
     output_dir: Path,
     variants,
+    config: Dict,
 ) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
+    value_target = average_policy_value_target(config)
     variant_order = [variant["variant_id"] for variant in variants]
     variant_labels = {variant["variant_id"]: variant["label"] for variant in variants}
 
@@ -93,6 +98,16 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_final_exploitability.png",
+    )
+    plot_metric_bar_by_variant(
+        summary_df,
+        "final_average_policy_value",
+        "DREAM Policy-Training Ablation: Final Average Policy Value",
+        "Final average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / "dream_policy_training_final_average_policy_value.png",
+        average_policy_value_target=value_target,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -133,6 +148,15 @@ def make_plots(
         )
         plot_paired_delta_bar(
             paired_df,
+            "final_average_policy_value",
+            "DREAM Policy-Training Ablation: Paired Final Average-Policy-Value Difference",
+            "Variant - intermittent baseline",
+            variant_order,
+            variant_labels,
+            plot_dir / "dream_policy_training_paired_delta_average_policy_value.png",
+        )
+        plot_paired_delta_bar(
+            paired_df,
             "final_policy_value_error",
             "DREAM Policy-Training Ablation: Paired Policy-Value-Error Difference",
             "Variant - intermittent baseline",
@@ -159,6 +183,28 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_exploitability_by_nodes.png",
+    )
+    plot_curve_by_variant(
+        curves_df,
+        "iteration",
+        "average_policy_value",
+        "DREAM Policy-Training Ablation: Average Policy Value by Iteration",
+        "Average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / "dream_policy_training_average_policy_value_by_iteration.png",
+        average_policy_value_target=value_target,
+    )
+    plot_curve_by_variant(
+        curves_df,
+        "nodes_touched",
+        "average_policy_value",
+        "DREAM Policy-Training Ablation: Average Policy Value by Nodes Touched",
+        "Average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / "dream_policy_training_average_policy_value_by_nodes.png",
+        average_policy_value_target=value_target,
     )
     plot_curve_by_variant(
         curves_df,
@@ -250,4 +296,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

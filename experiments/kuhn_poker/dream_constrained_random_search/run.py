@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict
 
 from dream_poker.experiment_runner import json_ready, write_json
+from dream_poker.experiment_utils import average_policy_value_target
 from dream_poker.random_search import (
     make_tuning_plots,
     prepare_tuning_output_dir,
@@ -74,6 +75,7 @@ def run_experiment(config: Dict) -> Path:
         confirmation_summary=confirmation_summary,
         confirmation_curves=confirmation_curves,
         confirmation_agg=confirmation_agg,
+        average_policy_value_target_value=average_policy_value_target(config),
     )
     print(f"Outputs written to {run_dir}")
     return run_dir

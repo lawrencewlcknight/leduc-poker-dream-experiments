@@ -28,13 +28,21 @@ from dream_poker.checkpointing import (
     save_dream_policy_snapshot,
     save_optional_full_checkpoint,
 )
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_runner import (
     create_timestamped_output_dir,
     json_ready,
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import (
+    average_policy_value_target,
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
 from dream_poker.plotting import plot_mean_curve
 
 from .config import EXPERIMENT_CONFIG
@@ -136,6 +144,7 @@ def build_checkpoint_row(
 
 
 def summarise_seed_checkpoints(curves: pd.DataFrame, seed: int, config: Dict) -> Dict:
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final = curves.sort_values("iteration").iloc[-1]
     expl = curves["exploitability"].astype(float)
     final_window = curves.tail(min(3, len(curves)))["exploitability"].astype(float)
@@ -149,6 +158,11 @@ def summarise_seed_checkpoints(curves: pd.DataFrame, seed: int, config: Dict) ->
         "best_exploitability_iteration": int(curves.loc[expl.idxmin(), "iteration"]),
         "final_window_mean_exploitability": float(final_window.mean()),
         "final_window_std_exploitability": float(final_window.std(ddof=0)),
+        "final_average_policy_value": float(final["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(
+            curves.tail(min(3, len(curves)))["average_policy_value"].mean()
+        ),
+        "final_average_policy_value_error": float(final["average_policy_value_error"]),
         "final_policy_value_error": float(final["policy_value_error"]),
         "final_nodes_touched": int(final["nodes_touched"]),
         "final_wall_clock_seconds": float(final["wall_clock_seconds"]),
@@ -165,6 +179,8 @@ def aggregate_seed_summary(summary_df: pd.DataFrame) -> Dict:
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "final_policy_value_error",
         "final_wall_clock_seconds",
         "final_nodes_touched",
@@ -198,12 +214,13 @@ def run_training_stage(config: Dict, output_dir: Path) -> Tuple[pd.DataFrame, pd
     curves_df.to_csv(output_dir / "checkpoint_curves.csv", index=False)
     summary_df.to_csv(output_dir / "seed_summary.csv", index=False)
     write_json(output_dir / "aggregate_summary.json", aggregate_seed_summary(summary_df))
-    make_training_plots(curves_df, output_dir)
+    make_training_plots(curves_df, output_dir, config)
     return curves_df, summary_df
 
 
-def make_training_plots(curves_df: pd.DataFrame, output_dir: Path) -> None:
+def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
+    value_target = average_policy_value_target(config)
     plot_mean_curve(
         curves_df,
         "iteration",
@@ -219,6 +236,24 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path) -> None:
         "DREAM checkpoint exploitability by nodes touched",
         "Exploitability",
         plot_dir / "checkpoint_exploitability_by_nodes.png",
+    )
+    plot_mean_curve(
+        curves_df,
+        "iteration",
+        "average_policy_value",
+        "DREAM checkpoint average policy value over training",
+        "Average policy value",
+        plot_dir / "checkpoint_average_policy_value_by_iteration.png",
+        average_policy_value_target=value_target,
+    )
+    plot_mean_curve(
+        curves_df,
+        "nodes_touched",
+        "average_policy_value",
+        "DREAM checkpoint average policy value by nodes touched",
+        "Average policy value",
+        plot_dir / "checkpoint_average_policy_value_by_nodes.png",
+        average_policy_value_target=value_target,
     )
     plot_mean_curve(
         curves_df,
@@ -282,7 +317,13 @@ def run_analysis_stage(config: Dict, checkpoint_dir: Path, output_dir: Optional[
     aggregate_strength_df.to_csv(analysis_dir / "head_to_head_aggregate_strength_summary.csv", index=False)
     best_checkpoint_df.to_csv(analysis_dir / "best_checkpoint_summary.csv", index=False)
 
-    make_head_to_head_plots(mean_matrix, win_fraction_matrix, aggregate_strength_df, plot_dir)
+    make_head_to_head_plots(
+        mean_matrix,
+        win_fraction_matrix,
+        aggregate_strength_df,
+        plot_dir,
+        average_policy_value_target(config),
+    )
     write_json(
         analysis_dir / "head_to_head_analysis_metadata.json",
         {
@@ -314,6 +355,7 @@ def make_head_to_head_plots(
     win_fraction_matrix: pd.DataFrame,
     aggregate_strength_df: pd.DataFrame,
     plot_dir: Path,
+    average_policy_value_target_value: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     plot_heatmap(
         mean_matrix,
@@ -364,6 +406,16 @@ def make_head_to_head_plots(
         "DREAM checkpoint exploitability",
         plot_dir / "dream_checkpoint_exploitability_aggregate.png",
         zero_line=False,
+    )
+    plot_errorbar(
+        aggregate_strength_df,
+        "average_policy_value_mean",
+        "average_policy_value_sem",
+        "Average policy value",
+        "DREAM checkpoint average policy value",
+        plot_dir / "dream_checkpoint_average_policy_value_aggregate.png",
+        zero_line=False,
+        average_policy_value_target=average_policy_value_target_value,
     )
     plot_errorbar(
         aggregate_strength_df,

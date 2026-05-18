@@ -3,19 +3,34 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.experiment_utils import (
+    average_policy_value_target,
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
+from dream_poker.plotting import (
+    add_average_policy_value_target,
+    add_nash_exploitability_target,
+    is_average_policy_value_metric,
+    is_exploitability_metric,
+)
 
 
 WARM_START_ARMS = ["baseline_continuous", "warm_start_resume"]
 
 
 def summarise_warm_start_curve(curves: pd.DataFrame, seed: int, arm: str, config: Dict) -> Dict:
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final_row = curves.iloc[-1]
     final_window = curves.tail(min(5, len(curves)))
     reached = curves[curves["exploitability"] <= config["exploitability_threshold"]]
@@ -34,6 +49,9 @@ def summarise_warm_start_curve(curves: pd.DataFrame, seed: int, arm: str, config
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -50,6 +68,8 @@ def build_warm_start_paired_differences(summary_df: pd.DataFrame, seeds: Sequenc
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "exploitability_auc_by_iteration",
         "exploitability_auc_by_nodes",
         "final_policy_value_error",
@@ -77,6 +97,8 @@ def aggregate_warm_start_by_arm(summary_df: pd.DataFrame) -> pd.DataFrame:
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "final_policy_value_error",
         "final_wall_clock_seconds",
         "final_nodes_touched",
@@ -107,8 +129,10 @@ def create_warm_start_plots(
     summary_df: pd.DataFrame,
     paired_df: pd.DataFrame,
     output_dir: Path,
+    config: Optional[Dict] = None,
 ) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
+    value_target = average_policy_value_target(config)
     plot_arm_curves(
         curves_df,
         "exploitability",
@@ -123,6 +147,23 @@ def create_warm_start_plots(
         "DREAM Warm-Start Ablation: Exploitability by Nodes Touched",
         plot_dir / "dream_warm_start_exploitability_by_nodes.png",
         x_col="nodes_touched",
+    )
+    plot_arm_curves(
+        curves_df,
+        "average_policy_value",
+        "Average policy value",
+        "DREAM Warm-Start Ablation: Average Policy Value by Iteration",
+        plot_dir / "dream_warm_start_average_policy_value_by_iteration.png",
+        average_policy_value_target=value_target,
+    )
+    plot_arm_curves(
+        curves_df,
+        "average_policy_value",
+        "Average policy value",
+        "DREAM Warm-Start Ablation: Average Policy Value by Nodes Touched",
+        plot_dir / "dream_warm_start_average_policy_value_by_nodes.png",
+        x_col="nodes_touched",
+        average_policy_value_target=value_target,
     )
     plot_arm_curves(
         curves_df,
@@ -156,6 +197,14 @@ def create_warm_start_plots(
     )
     plot_summary_by_arm(
         summary_df,
+        "final_average_policy_value",
+        "Final average policy value",
+        "DREAM Warm-Start Ablation: Final Average Policy Value",
+        plot_dir / "dream_warm_start_final_average_policy_value.png",
+        average_policy_value_target=value_target,
+    )
+    plot_summary_by_arm(
+        summary_df,
         "final_policy_value_error",
         "Final policy-value error",
         "DREAM Warm-Start Ablation: Final Policy-Value Error",
@@ -167,6 +216,13 @@ def create_warm_start_plots(
         "Warm-start minus baseline",
         "DREAM Warm-Start Ablation: Paired Final Exploitability Difference",
         plot_dir / "dream_warm_start_paired_final_exploitability_delta.png",
+    )
+    plot_paired_deltas(
+        paired_df,
+        "final_average_policy_value",
+        "Warm-start minus baseline",
+        "DREAM Warm-Start Ablation: Paired Final Average Policy Value Difference",
+        plot_dir / "dream_warm_start_paired_final_average_policy_value_delta.png",
     )
     plot_paired_deltas(
         paired_df,
@@ -185,6 +241,7 @@ def plot_arm_curves(
     output_path: Path,
     *,
     x_col: str = "iteration",
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
     for arm in WARM_START_ARMS:
@@ -201,6 +258,10 @@ def plot_arm_curves(
         ax.fill_between(x, y - se_y, y + se_y, alpha=0.16)
         for _, seed_df in arm_df.groupby("seed"):
             ax.plot(seed_df[x_col], seed_df[metric], linewidth=0.6, alpha=0.16)
+    if is_exploitability_metric(metric):
+        add_nash_exploitability_target(ax)
+    elif is_average_policy_value_metric(metric):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
     ax.set_title(title)
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
@@ -217,12 +278,19 @@ def plot_summary_by_arm(
     ylabel: str,
     title: str,
     output_path: Path,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     grouped = summary_df.groupby("arm")[metric]
     means = [grouped.mean().get(arm, np.nan) for arm in WARM_START_ARMS]
     ses = [grouped.sem().get(arm, 0.0) for arm in WARM_START_ARMS]
     fig, ax = plt.subplots(figsize=(7.2, 4.8))
     ax.bar(WARM_START_ARMS, means, yerr=ses, capsize=6)
+    if is_exploitability_metric(metric):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif is_average_policy_value_metric(metric):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.tick_params(axis="x", rotation=15)

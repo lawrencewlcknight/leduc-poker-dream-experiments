@@ -11,12 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from dream_poker.constants import EXPLOITABILITY_THRESHOLD, KUHN_AVERAGE_POLICY_VALUE_TARGET
+
 try:
     import pyspiel
 except Exception:  # pragma: no cover
     pyspiel = None
 
-from dream_poker.constants import EXPLOITABILITY_THRESHOLD
 from dream_poker.experiment_runner import (
     create_timestamped_output_dir,
     json_ready,
@@ -24,6 +25,13 @@ from dream_poker.experiment_runner import (
     write_json,
 )
 from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import ensure_average_policy_value_columns
+from dream_poker.plotting import (
+    add_average_policy_value_target,
+    add_nash_exploitability_target,
+    is_average_policy_value_metric,
+    is_exploitability_metric,
+)
 from dream_poker.seeding import set_seed
 
 
@@ -84,6 +92,7 @@ def summarise_tuning_curve(
 ) -> Dict:
     if curves.empty:
         raise ValueError("No checkpoint metrics were returned by the solver.")
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final_row = curves.iloc[-1]
     final_window = curves.tail(min(5, len(curves)))
     reached = curves[curves["exploitability"] <= EXPLOITABILITY_THRESHOLD]
@@ -122,6 +131,9 @@ def summarise_tuning_curve(
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -140,6 +152,7 @@ def run_config_seed(config: Dict, seed: int, stage: str, run_dir: Path) -> Tuple
 
     t0 = time.perf_counter()
     curves = solver.solve(isolate_policy_training_rng=config.get("isolate_policy_training_rng", True))
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     train_seconds = time.perf_counter() - t0
 
     curves.insert(0, "stage", stage)
@@ -162,6 +175,8 @@ def aggregate_config_summary(summary_df: pd.DataFrame) -> pd.DataFrame:
         "final_exploitability",
         "best_exploitability",
         "final_window_mean_exploitability",
+        "final_average_policy_value",
+        "final_window_mean_average_policy_value",
         "final_window_std_exploitability",
         "exploitability_auc_by_iteration",
         "exploitability_auc_by_nodes",
@@ -322,6 +337,7 @@ def make_tuning_plots(
     confirmation_summary: pd.DataFrame,
     confirmation_curves: pd.DataFrame,
     confirmation_agg: pd.DataFrame,
+    average_policy_value_target_value: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> List[Path]:
     plot_dir = ensure_dir(run_dir / "plots")
     table_dir = ensure_dir(run_dir / "tables")
@@ -338,6 +354,18 @@ def make_tuning_plots(
                 plot_dir / "screening_ranked_final_window_exploitability.png",
             )
         )
+        if "final_window_mean_average_policy_value_mean" in screening_agg.columns:
+            paths.append(
+                _barh_metric(
+                    screening_agg.sort_values("final_window_mean_average_policy_value_mean"),
+                    "final_window_mean_average_policy_value_mean",
+                    "final_window_mean_average_policy_value_se",
+                    "DREAM random search screening: final-window average policy value",
+                    "Mean final-window average policy value",
+                    plot_dir / "screening_ranked_final_window_average_policy_value.png",
+                    average_policy_value_target=average_policy_value_target_value,
+                )
+            )
 
     if not confirmation_agg.empty:
         paths.append(
@@ -360,6 +388,30 @@ def make_tuning_plots(
                 plot_dir / "confirmation_final_window_exploitability.png",
             )
         )
+        if "final_average_policy_value_mean" in confirmation_agg.columns:
+            paths.append(
+                _barh_metric(
+                    confirmation_agg.sort_values("final_average_policy_value_mean"),
+                    "final_average_policy_value_mean",
+                    "final_average_policy_value_se",
+                    "DREAM random search confirmation: final average policy value",
+                    "Mean final average policy value",
+                    plot_dir / "confirmation_final_average_policy_value.png",
+                    average_policy_value_target=average_policy_value_target_value,
+                )
+            )
+        if "final_window_mean_average_policy_value_mean" in confirmation_agg.columns:
+            paths.append(
+                _barh_metric(
+                    confirmation_agg.sort_values("final_window_mean_average_policy_value_mean"),
+                    "final_window_mean_average_policy_value_mean",
+                    "final_window_mean_average_policy_value_se",
+                    "DREAM random search confirmation: final-window average policy value",
+                    "Mean final-window average policy value",
+                    plot_dir / "confirmation_final_window_average_policy_value.png",
+                    average_policy_value_target=average_policy_value_target_value,
+                )
+            )
 
     if not confirmation_curves.empty:
         paths.append(
@@ -382,6 +434,29 @@ def make_tuning_plots(
                 plot_dir / "confirmation_exploitability_by_nodes.png",
             )
         )
+        if "average_policy_value" in confirmation_curves.columns:
+            paths.append(
+                _plot_grouped_curve(
+                    confirmation_curves,
+                    "iteration",
+                    "average_policy_value",
+                    "DREAM random search confirmation: average policy value by iteration",
+                    "Average policy value",
+                    plot_dir / "confirmation_average_policy_value_by_iteration.png",
+                    average_policy_value_target=average_policy_value_target_value,
+                )
+            )
+            paths.append(
+                _plot_grouped_curve(
+                    confirmation_curves,
+                    "nodes_touched",
+                    "average_policy_value",
+                    "DREAM random search confirmation: average policy value by nodes touched",
+                    "Average policy value",
+                    plot_dir / "confirmation_average_policy_value_by_nodes.png",
+                    average_policy_value_target=average_policy_value_target_value,
+                )
+            )
         paths.append(
             _plot_grouped_curve(
                 confirmation_curves,
@@ -403,7 +478,34 @@ def make_tuning_plots(
         delta_summary = paired.groupby("config_label")["delta_candidate_minus_baseline"].agg(
             ["mean", "sem"]
         ).reset_index()
-        paths.append(_paired_delta_plot(delta_summary, plot_dir / "confirmation_paired_delta_final_exploitability.png"))
+        paths.append(
+            _paired_delta_plot(
+                delta_summary,
+                plot_dir / "confirmation_paired_delta_final_exploitability.png",
+            )
+        )
+    if "final_average_policy_value" in confirmation_summary.columns:
+        paired_value = paired_differences_vs_baseline(
+            confirmation_summary,
+            metric="final_average_policy_value",
+            baseline_label=baseline_label,
+        )
+        paired_value.to_csv(
+            table_dir / "confirmation_paired_differences_final_average_policy_value.csv",
+            index=False,
+        )
+        if not paired_value.empty:
+            delta_summary = paired_value.groupby("config_label")["delta_candidate_minus_baseline"].agg(
+                ["mean", "sem"]
+            ).reset_index()
+            paths.append(
+                _paired_delta_plot(
+                    delta_summary,
+                    plot_dir / "confirmation_paired_delta_final_average_policy_value.png",
+                    title="DREAM random search: paired final average policy value delta",
+                    xlabel="Candidate minus baseline average policy value",
+                )
+            )
     return paths
 
 
@@ -414,9 +516,16 @@ def _barh_metric(
     title: str,
     xlabel: str,
     output_path: Path,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.barh(df["config_label"], df[metric_col], xerr=df.get(se_col), capsize=3)
+    if is_exploitability_metric(metric_col):
+        add_nash_exploitability_target(ax, axis="x")
+        ax.legend()
+    elif is_average_policy_value_metric(metric_col.replace("_mean", "")):
+        add_average_policy_value_target(ax, target=average_policy_value_target, axis="x")
+        ax.legend()
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.grid(True, axis="x", alpha=0.3)
@@ -433,6 +542,7 @@ def _plot_grouped_curve(
     title: str,
     ylabel: str,
     output_path: Path,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5.2))
     for label, group in curves_df.groupby("config_label"):
@@ -444,6 +554,10 @@ def _plot_grouped_curve(
         e = se.to_numpy(dtype=float)
         ax.plot(x, y, linewidth=2.0, label=label)
         ax.fill_between(x, y - e, y + e, alpha=0.12)
+    if is_exploitability_metric(y_col):
+        add_nash_exploitability_target(ax)
+    elif is_average_policy_value_metric(y_col):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
     ax.set_title(title)
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
@@ -455,7 +569,12 @@ def _plot_grouped_curve(
     return output_path
 
 
-def _paired_delta_plot(delta_summary: pd.DataFrame, output_path: Path) -> Path:
+def _paired_delta_plot(
+    delta_summary: pd.DataFrame,
+    output_path: Path,
+    title: str = "DREAM random search: paired final exploitability delta",
+    xlabel: str = "Candidate minus baseline exploitability",
+) -> Path:
     fig, ax = plt.subplots(figsize=(8.2, 4.8))
     ax.barh(
         delta_summary["config_label"],
@@ -464,8 +583,8 @@ def _paired_delta_plot(delta_summary: pd.DataFrame, output_path: Path) -> Path:
         capsize=4,
     )
     ax.axvline(0.0, linestyle="--", linewidth=1.0)
-    ax.set_title("DREAM random search: paired final exploitability delta")
-    ax.set_xlabel("Candidate minus baseline exploitability")
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
     ax.grid(True, axis="x", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, dpi=200, bbox_inches="tight")

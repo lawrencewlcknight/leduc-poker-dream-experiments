@@ -8,8 +8,15 @@ from typing import Dict, Iterable, Sequence
 import numpy as np
 import pandas as pd
 
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_runner import CORE_SUMMARY_METRICS
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import (
+    compute_auc,
+    ensure_average_policy_value_columns,
+    ensure_dir,
+    safe_mean,
+    standard_error,
+)
 from dream_poker.plotting import plot_curve_by_variant, plot_metric_bar_by_variant, plot_paired_delta_bar
 
 
@@ -33,7 +40,7 @@ def apply_variant_overrides(base_config: Dict, variant: Dict) -> Dict:
 
 
 def add_budget_curve_columns(curves: pd.DataFrame, config: Dict, budget_key: str) -> pd.DataFrame:
-    curves = curves.copy()
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     curves[budget_key] = int(config[budget_key])
     curves["advantage_network_train_steps"] = int(config["advantage_network_train_steps"])
     curves["policy_network_train_steps"] = int(config["policy_network_train_steps"])
@@ -51,6 +58,7 @@ def summarise_network_budget_curve(
     config: Dict,
     budget_key: str,
 ) -> Dict:
+    curves = ensure_average_policy_value_columns(curves, config.get("average_policy_value_target"))
     final_row = curves.iloc[-1]
     final_window = curves.tail(min(5, len(curves)))
     reached = curves[curves["exploitability"] <= config["exploitability_threshold"]]
@@ -77,6 +85,9 @@ def summarise_network_budget_curve(
         "exploitability_auc_by_iteration": compute_auc(curves["iteration"], curves["exploitability"]),
         "exploitability_auc_by_nodes": compute_auc(curves["nodes_touched"], curves["exploitability"]),
         "final_policy_value_player_0": float(final_row["policy_value_player_0"]),
+        "final_average_policy_value": float(final_row["average_policy_value"]),
+        "final_window_mean_average_policy_value": float(final_window["average_policy_value"].mean()),
+        "final_average_policy_value_error": float(final_row["average_policy_value_error"]),
         "final_policy_value_error": float(final_row["policy_value_error"]),
         "best_policy_value_error": float(curves["policy_value_error"].min()),
         "nodes_to_threshold": int(reached.iloc[0]["nodes_touched"]) if len(reached) else np.nan,
@@ -127,6 +138,7 @@ def write_multiseed_npz(curves_df: pd.DataFrame, output_path: Path, extra_column
         "iteration": curves_df["iteration"].to_numpy(),
         "nodes_touched": curves_df["nodes_touched"].to_numpy(),
         "exploitability": curves_df["exploitability"].to_numpy(),
+        "average_policy_value": curves_df["average_policy_value"].to_numpy(),
         "policy_value_error": curves_df["policy_value_error"].to_numpy(),
     }
     for col in extra_columns:
@@ -143,6 +155,7 @@ def create_network_budget_plots(
     output_dir: Path,
     plot_prefix: str,
     title_prefix: str,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
     variant_order = [get_variant_id(variant) for variant in variants]
@@ -167,6 +180,28 @@ def create_network_budget_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_exploitability_by_nodes.png",
+    )
+    plot_curve_by_variant(
+        curves_df,
+        "iteration",
+        "average_policy_value",
+        f"{title_prefix}: Average Policy Value by Iteration",
+        "Average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / f"{plot_prefix}_average_policy_value_by_iteration.png",
+        average_policy_value_target=average_policy_value_target,
+    )
+    plot_curve_by_variant(
+        curves_df,
+        "nodes_touched",
+        "average_policy_value",
+        f"{title_prefix}: Average Policy Value by Nodes Touched",
+        "Average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / f"{plot_prefix}_average_policy_value_by_nodes.png",
+        average_policy_value_target=average_policy_value_target,
     )
     plot_curve_by_variant(
         curves_df,
@@ -228,6 +263,26 @@ def create_network_budget_plots(
     )
     plot_metric_bar_by_variant(
         summary_df,
+        "final_average_policy_value",
+        f"{title_prefix}: Final Average Policy Value",
+        "Final average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / f"{plot_prefix}_final_average_policy_value.png",
+        average_policy_value_target=average_policy_value_target,
+    )
+    plot_metric_bar_by_variant(
+        summary_df,
+        "final_window_mean_average_policy_value",
+        f"{title_prefix}: Final-Window Average Policy Value",
+        "Final-window mean average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / f"{plot_prefix}_final_window_average_policy_value.png",
+        average_policy_value_target=average_policy_value_target,
+    )
+    plot_metric_bar_by_variant(
+        summary_df,
         "final_baseline_loss_mean",
         f"{title_prefix}: Final Baseline Loss",
         "Mean baseline loss",
@@ -244,6 +299,15 @@ def create_network_budget_plots(
             variant_order,
             variant_labels,
             plot_dir / f"{plot_prefix}_paired_final_exploitability_delta.png",
+        )
+        plot_paired_delta_bar(
+            paired_df,
+            "final_average_policy_value",
+            f"{title_prefix}: Paired Final Average-Policy-Value Difference",
+            "Variant - baseline",
+            variant_order,
+            variant_labels,
+            plot_dir / f"{plot_prefix}_paired_final_average_policy_value_delta.png",
         )
         plot_paired_delta_bar(
             paired_df,

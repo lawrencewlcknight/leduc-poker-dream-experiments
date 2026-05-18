@@ -10,7 +10,52 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_utils import ensure_dir
+
+
+NASH_EXPLOITABILITY_TARGET = 0.0
+NASH_EXPLOITABILITY_TARGET_LABEL = "Nash equilibrium target (0)"
+AVERAGE_POLICY_VALUE_TARGET_LABEL = "Average-policy value target"
+
+
+def is_exploitability_metric(metric: str) -> bool:
+    return "exploitability" in metric.lower()
+
+
+def is_average_policy_value_metric(metric: str) -> bool:
+    metric = metric.lower()
+    return metric.endswith("average_policy_value") and not metric.startswith("delta_")
+
+
+def add_nash_exploitability_target(
+    ax,
+    *,
+    axis: str = "y",
+    label: str = NASH_EXPLOITABILITY_TARGET_LABEL,
+) -> None:
+    if axis == "y":
+        ax.axhline(NASH_EXPLOITABILITY_TARGET, linestyle="--", linewidth=1.1, label=label)
+    elif axis == "x":
+        ax.axvline(NASH_EXPLOITABILITY_TARGET, linestyle="--", linewidth=1.1, label=label)
+    else:
+        raise ValueError("axis must be 'x' or 'y'.")
+
+
+def add_average_policy_value_target(
+    ax,
+    *,
+    target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    axis: str = "y",
+    label: str = AVERAGE_POLICY_VALUE_TARGET_LABEL,
+) -> None:
+    target_label = f"{label} ({target:.4f})"
+    if axis == "y":
+        ax.axhline(float(target), linestyle="--", linewidth=1.1, label=target_label)
+    elif axis == "x":
+        ax.axvline(float(target), linestyle="--", linewidth=1.1, label=target_label)
+    else:
+        raise ValueError("axis must be 'x' or 'y'.")
 
 
 def plot_mean_curve(
@@ -21,6 +66,7 @@ def plot_mean_curve(
     ylabel: str,
     output_path: Optional[Path] = None,
     equilibrium_line: Optional[float] = None,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for seed, seed_df in curves_df.groupby("seed"):
@@ -33,8 +79,12 @@ def plot_mean_curve(
     se_y = se.to_numpy(dtype=float)
     ax.plot(x, y, linewidth=2.2, label="Mean across seeds")
     ax.fill_between(x, y - se_y, y + se_y, alpha=0.18, label="±1 s.e.")
-    if equilibrium_line is not None:
-        ax.axhline(equilibrium_line, linestyle="--", linewidth=1.1, label="Known Kuhn value")
+    if is_exploitability_metric(y_col):
+        add_nash_exploitability_target(ax)
+    elif is_average_policy_value_metric(y_col):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+    elif equilibrium_line is not None:
+        ax.axhline(equilibrium_line, linestyle="--", linewidth=1.1, label="Target")
     ax.set_title(title)
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
@@ -46,11 +96,24 @@ def plot_mean_curve(
     return fig, ax
 
 
-def plot_summary_bar(summary_df: pd.DataFrame, metric: str, title: str, ylabel: str, output_path: Optional[Path] = None):
+def plot_summary_bar(
+    summary_df: pd.DataFrame,
+    metric: str,
+    title: str,
+    ylabel: str,
+    output_path: Optional[Path] = None,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+):
     fig, ax = plt.subplots(figsize=(6.8, 4.6))
     mean = summary_df[metric].mean()
     se = summary_df[metric].sem()
     ax.bar(["DREAM baseline"], [mean], yerr=[se], capsize=6)
+    if is_exploitability_metric(metric):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif is_average_policy_value_metric(metric):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)
@@ -65,12 +128,19 @@ def plot_summary_bars(
     metrics: Sequence[str],
     title: str,
     output_path: Optional[Path] = None,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
     labels = [metric.replace("_", " ").title() for metric in metrics]
     means = [summary_df[metric].mean() for metric in metrics]
     ses = [summary_df[metric].sem() for metric in metrics]
     ax.bar(labels, means, yerr=ses, capsize=6)
+    if all(is_exploitability_metric(metric) for metric in metrics):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif all(is_average_policy_value_metric(metric) for metric in metrics):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
     ax.set_title(title)
     ax.grid(True, axis="y", alpha=0.3)
     ax.tick_params(axis="x", rotation=20)
@@ -93,6 +163,7 @@ def plot_metric_bar_by_variant(
     variant_order: Sequence[str],
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ):
     order = ordered_variants(summary_df, variant_order)
     labels = [variant_labels.get(v, v) for v in order]
@@ -100,6 +171,12 @@ def plot_metric_bar_by_variant(
     ses = [summary_df.loc[summary_df["variant"] == v, metric].sem() for v in order]
     fig, ax = plt.subplots(figsize=(9.0, 5.2))
     ax.bar(labels, means, yerr=ses, capsize=6)
+    if is_exploitability_metric(metric):
+        add_nash_exploitability_target(ax)
+        ax.legend()
+    elif is_average_policy_value_metric(metric):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
+        ax.legend()
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)
@@ -119,6 +196,7 @@ def plot_curve_by_variant(
     variant_order: Sequence[str],
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
+    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(9.0, 5.2))
     for variant in ordered_variants(curves_df, variant_order):
@@ -142,6 +220,10 @@ def plot_curve_by_variant(
         )
         if len(x) > 1:
             ax.fill_between(x, y - se_y, y + se_y, alpha=0.15)
+    if is_exploitability_metric(y_col):
+        add_nash_exploitability_target(ax)
+    elif is_average_policy_value_metric(y_col):
+        add_average_policy_value_target(ax, target=average_policy_value_target)
     ax.set_title(title)
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)

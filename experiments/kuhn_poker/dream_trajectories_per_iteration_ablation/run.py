@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import compute_auc, ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, compute_auc, ensure_dir
 from dream_poker.plotting import plot_curve_by_variant, plot_paired_delta_bar
 from dream_poker.variant_ablation import (
     add_variant_curve_columns,
@@ -74,6 +74,10 @@ def summarise_trajectory_curve(curves: pd.DataFrame, seed: int, variant: Dict, c
     summary["exploitability_auc_by_sampled_trajectories"] = compute_auc(
         curves["sampled_trajectories"],
         curves["exploitability"],
+    )
+    summary["average_policy_value_auc_by_sampled_trajectories"] = compute_auc(
+        curves["sampled_trajectories"],
+        curves["average_policy_value"],
     )
     summary["sampled_trajectories_to_threshold"] = (
         int(reached.iloc[0]["sampled_trajectories"]) if len(reached) else float("nan")
@@ -150,7 +154,7 @@ def run_experiment(
         ],
     )
 
-    make_plots(curves_df, summary_df, paired_df, variants, output_dir)
+    make_plots(curves_df, summary_df, paired_df, variants, output_dir, config)
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir
 
@@ -161,9 +165,11 @@ def make_plots(
     paired_df: pd.DataFrame,
     variants: Sequence[Dict],
     output_dir: Path,
+    config: Dict,
 ) -> None:
     plot_prefix = "dream_trajectories_per_iteration"
     title_prefix = "DREAM Trajectories-per-Iteration Ablation"
+    value_target = average_policy_value_target(config)
     create_variant_ablation_plots(
         curves_df,
         summary_df,
@@ -177,6 +183,7 @@ def make_plots(
             ("baseline_reward_variance_sampled", "Baseline-Replay Reward Variance", "Sampled reward variance"),
             ("strategy_buffer_size", "Strategy-Memory Size", "Strategy-memory entries"),
         ],
+        average_policy_value_target=value_target,
     )
 
     plot_dir = ensure_dir(output_dir / "plots")
@@ -191,6 +198,17 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_exploitability_by_sampled_trajectories.png",
+    )
+    plot_curve_by_variant(
+        curves_df,
+        "sampled_trajectories",
+        "average_policy_value",
+        f"{title_prefix}: Average Policy Value by Sampled Trajectories",
+        "Average policy value",
+        variant_order,
+        variant_labels,
+        plot_dir / f"{plot_prefix}_average_policy_value_by_sampled_trajectories.png",
+        average_policy_value_target=value_target,
     )
     plot_curve_by_variant(
         curves_df,

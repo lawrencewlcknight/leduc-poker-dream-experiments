@@ -28,7 +28,7 @@ except Exception:  # pragma: no cover - OpenSpiel may not be installed in all en
     expected_game_score = None
     exploitability = None
 
-from dream_poker.constants import KUHN_GAME_VALUE_P0
+from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET, KUHN_GAME_VALUE_P0
 from dream_poker.experiment_utils import grad_norm, safe_mean, safe_std
 from dream_poker.networks import MLP
 from dream_poker.replay import (
@@ -582,7 +582,10 @@ class DREAMSolver(policy.Policy if policy is not None else object):
     # ---- Diagnostics ----
     def _checkpoint_metrics(self, start_time: float) -> Dict:
         tab_policy = policy.tabular_policy_from_callable(self._game, self.action_probabilities)
-        policy_value = float(expected_game_score.policy_value(self._game.new_initial_state(), [tab_policy] * self._num_players)[0])
+        policy_value = float(
+            expected_game_score.policy_value(self._game.new_initial_state(), [tab_policy] * self._num_players)[0]
+        )
+        average_policy_value = policy_value
         if self._compute_exploitability:
             nash_conv = float(exploitability.nash_conv(self._game, tab_policy))
             expl = nash_conv / 2.0
@@ -600,7 +603,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "nash_conv": nash_conv,
             "exploitability": expl,
             "policy_value_player_0": policy_value,
+            "average_policy_value": average_policy_value,
             "policy_value_error": abs(policy_value - KUHN_GAME_VALUE_P0),
+            "average_policy_value_error": abs(average_policy_value - KUHN_AVERAGE_POLICY_VALUE_TARGET),
             "policy_loss": float(self._last_policy_loss),
             "advantage_loss_player_0": float(self._last_advantage_loss[0]),
             "advantage_loss_player_1": float(self._last_advantage_loss[1]),
