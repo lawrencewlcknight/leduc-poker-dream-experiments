@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import ensure_dir
+from dream_poker.experiment_utils import cleanup_training_memory, ensure_dir
 from dream_poker.warm_start import (
     aggregate_warm_start_by_arm,
     build_warm_start_paired_differences,
@@ -56,6 +56,8 @@ def run_continuous_arm(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.Da
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_warm_start_curve(curves, seed, "baseline_continuous", config)
     write_json(seed_dir / "seed_summary.json", summary)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 
@@ -71,6 +73,8 @@ def run_warm_start_arm(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.Da
     checkpoint_dir = ensure_dir(output_dir / f"seed_{seed}" / "warm_start_resume" / "checkpoint")
     checkpoint_path = checkpoint_dir / f"dream_checkpoint_iter_{config['warm_start_iteration']}.pt"
     torch.save(solver.full_checkpoint_state(), checkpoint_path)
+    del solver
+    cleanup_training_memory()
 
     resumed_solver = make_dream_solver(solver_config(config), seed)
     try:
@@ -78,6 +82,8 @@ def run_warm_start_arm(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.Da
     except TypeError:
         state = torch.load(checkpoint_path, map_location="cpu")
     resumed_solver.load_full_checkpoint_state(state)
+    del state
+    cleanup_training_memory()
     curves_2 = resumed_solver.solve(
         target_iteration=config["total_iterations"],
         start_time=start_time,
@@ -93,6 +99,8 @@ def run_warm_start_arm(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.Da
     summary["warm_start_iteration"] = int(config["warm_start_iteration"])
     summary["checkpoint_path"] = str(checkpoint_path)
     write_json(seed_dir / "seed_summary.json", summary)
+    del resumed_solver
+    cleanup_training_memory()
     return curves, summary
 
 

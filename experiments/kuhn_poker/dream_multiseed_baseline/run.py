@@ -20,6 +20,7 @@ except Exception:  # pragma: no cover
 
 from dream_poker.experiment_utils import (
     average_policy_value_target,
+    cleanup_training_memory,
     compute_auc,
     ensure_average_policy_value_columns,
     ensure_dir,
@@ -109,6 +110,8 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
     }
     with open(seed_dir / "seed_summary.json", "w") as f:
         json.dump(_json_ready(summary), f, indent=2)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 

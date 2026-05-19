@@ -37,6 +37,7 @@ from dream_poker.experiment_runner import (
 )
 from dream_poker.experiment_utils import (
     average_policy_value_target,
+    cleanup_training_memory,
     compute_auc,
     ensure_average_policy_value_columns,
     ensure_dir,
@@ -208,6 +209,8 @@ def run_training_stage(config: Dict, output_dir: Path) -> Tuple[pd.DataFrame, pd
         curves["seed"] = int(seed)
         all_curves.append(curves)
         summaries.append(summarise_seed_checkpoints(curves, int(seed), config))
+        del solver
+        cleanup_training_memory()
 
     curves_df = pd.concat(all_curves, ignore_index=True) if all_curves else pd.DataFrame()
     summary_df = pd.DataFrame(summaries)
@@ -336,6 +339,8 @@ def run_analysis_stage(config: Dict, checkpoint_dir: Path, output_dir: Optional[
             "head_to_head_equivalence_epsilon": float(config["head_to_head_equivalence_epsilon"]),
         },
     )
+    del policies_by_seed, exact_matrices, game
+    cleanup_training_memory()
     return {
         "checkpoint_inventory": checkpoint_df,
         "loaded_policy_inventory": loaded_policy_df,

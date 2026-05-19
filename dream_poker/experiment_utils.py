@@ -1,6 +1,7 @@
 
 """Shared experiment utilities."""
 
+import gc
 from pathlib import Path
 from typing import Mapping, Optional, Sequence, Union
 import numpy as np
@@ -76,6 +77,25 @@ def ensure_average_policy_value_columns(
             result["average_policy_value"].astype(float) - value_target
         ).abs()
     return result
+
+
+def cleanup_training_memory() -> None:
+    """Release solver memory between independent experiment runs."""
+    gc.collect()
+    try:
+        import torch
+    except Exception:
+        return
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    mps = getattr(torch, "mps", None)
+    if mps is not None and hasattr(mps, "empty_cache"):
+        try:
+            mps.empty_cache()
+        except Exception:
+            pass
 
 
 def grad_norm(parameters) -> float:

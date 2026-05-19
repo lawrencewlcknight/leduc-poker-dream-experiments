@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover
     pyspiel = None
 
 from dream_poker.experiment_utils import (
+    cleanup_training_memory,
     compute_auc,
     ensure_average_policy_value_columns,
     ensure_dir,
@@ -188,6 +189,8 @@ def run_dream_variant_seed(
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_seed_curves(curves, seed, variant, config, final_steps)
     write_json(seed_dir / "seed_summary.json", summary)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 

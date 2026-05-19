@@ -47,15 +47,21 @@ class LoadedDREAMPolicy(osp_policy.Policy if osp_policy is not None else object)
             super().__init__(game, list(range(game.num_players())))
         self.path = Path(snapshot_path)
         try:
-            self.snapshot = torch.load(self.path, map_location=map_location, weights_only=False)
+            snapshot = torch.load(self.path, map_location=map_location, weights_only=False)
         except TypeError:
-            self.snapshot = torch.load(self.path, map_location=map_location)
-        input_size, hidden_sizes, output_size = infer_architecture_from_snapshot(self.snapshot)
+            snapshot = torch.load(self.path, map_location=map_location)
+        input_size, hidden_sizes, output_size = infer_architecture_from_snapshot(snapshot)
         self.network = MLP(input_size, hidden_sizes, output_size)
-        self.network.load_state_dict(self.snapshot["policy_network_state_dict"])
+        self.network.load_state_dict(snapshot["policy_network_state_dict"])
         self.network.eval()
-        self.iteration_inside_checkpoint = int(self.snapshot.get("checkpoint_iteration", -1))
-        self.seed = str(self.snapshot.get("seed", "unknown"))
+        self.iteration_inside_checkpoint = int(snapshot.get("checkpoint_iteration", -1))
+        self.seed = str(snapshot.get("seed", "unknown"))
+        self.snapshot = {
+            key: value
+            for key, value in snapshot.items()
+            if key != "policy_network_state_dict"
+        }
+        del snapshot
 
     def action_probabilities(self, state, player_id=None):
         del player_id

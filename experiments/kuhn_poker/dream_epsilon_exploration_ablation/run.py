@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import average_policy_value_target, ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, cleanup_training_memory, ensure_dir
 from dream_poker.variant_ablation import (
     add_variant_curve_columns,
     aggregate_variant_summary,
@@ -72,6 +72,8 @@ def run_single_variant_seed(
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_variant_curve(curves, seed, variant, config, TREATMENT_KEYS)
     write_json(seed_dir / "seed_summary.json", summary)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 

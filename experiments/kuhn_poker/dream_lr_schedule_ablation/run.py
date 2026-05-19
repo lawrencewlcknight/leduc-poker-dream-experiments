@@ -16,7 +16,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import ensure_dir
+from dream_poker.experiment_utils import cleanup_training_memory, ensure_dir
 from dream_poker.lr_schedule import (
     aggregate_lr_schedule_summary,
     create_lr_schedule_plots,
@@ -51,6 +51,8 @@ def run_single_variant_seed(
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_lr_schedule_curve(curves, seed, schedule_config, config)
     write_json(seed_dir / "seed_summary.json", summary)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 
@@ -159,4 +161,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

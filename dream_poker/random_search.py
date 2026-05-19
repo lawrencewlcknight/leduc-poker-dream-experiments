@@ -24,7 +24,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import compute_auc, ensure_dir, safe_mean, standard_error
+from dream_poker.experiment_utils import cleanup_training_memory, compute_auc, ensure_dir, safe_mean, standard_error
 from dream_poker.experiment_utils import ensure_average_policy_value_columns
 from dream_poker.plotting import (
     add_average_policy_value_target,
@@ -164,7 +164,10 @@ def run_config_seed(config: Dict, seed: int, stage: str, run_dir: Path) -> Tuple
 
     summary = summarise_tuning_curve(curves, config, seed, stage, train_seconds)
     write_json(trace_dir / f"seed_{seed}_summary.json", summary)
-    return summary, curves.to_dict(orient="records")
+    curve_rows = curves.to_dict(orient="records")
+    del solver
+    cleanup_training_memory()
+    return summary, curve_rows
 
 
 def aggregate_config_summary(summary_df: pd.DataFrame) -> pd.DataFrame:

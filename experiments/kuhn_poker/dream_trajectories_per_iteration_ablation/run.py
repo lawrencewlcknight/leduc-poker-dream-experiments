@@ -17,7 +17,7 @@ from dream_poker.experiment_runner import (
     make_dream_solver,
     write_json,
 )
-from dream_poker.experiment_utils import average_policy_value_target, compute_auc, ensure_dir
+from dream_poker.experiment_utils import average_policy_value_target, cleanup_training_memory, compute_auc, ensure_dir
 from dream_poker.plotting import plot_curve_by_variant, plot_paired_delta_bar
 from dream_poker.variant_ablation import (
     add_variant_curve_columns,
@@ -111,6 +111,8 @@ def run_single_variant_seed(
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_trajectory_curve(curves, seed, variant, config)
     write_json(seed_dir / "seed_summary.json", summary)
+    del solver
+    cleanup_training_memory()
     return curves, summary
 
 
