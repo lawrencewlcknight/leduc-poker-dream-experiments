@@ -16,7 +16,7 @@ EXPERIMENT_CONFIG = {
     "experiment_name": "kuhn_poker_dream_multiseed_baseline",
     "game_name": "kuhn_poker",
     "algorithm": "DREAM-style OpenSpiel baseline",
-    "num_iterations": 250,
+    "num_iterations": 175,
     "num_traversals": 160,
     "evaluation_interval": 25,
     "policy_network_train_every": 25,

@@ -12,21 +12,21 @@ from dream_poker.constants import (
 )
 
 
-CHECKPOINT_SCHEDULE = [25, 50, 100, 200, 300, 400, 500]
+CHECKPOINT_SCHEDULE = [25, 50, 75, 100, 125, 150, 175]
 
 
 EXPERIMENT_CONFIG = {
     "experiment_name": "kuhn_poker_dream_checkpoint_stability",
     "game_name": "kuhn_poker",
     "algorithm": "DREAM-style OpenSpiel checkpoint-stability experiment",
-    "num_iterations": 500,
-    "num_traversals": 320,
+    "num_iterations": 175,
+    "num_traversals": 160,
     "checkpoint_schedule": CHECKPOINT_SCHEDULE,
     "evaluation_interval": 25,
     "policy_network_train_every": 25,
-    "policy_network_train_steps": 200,
-    "advantage_network_train_steps": 100,
-    "baseline_network_train_steps": 100,
+    "policy_network_train_steps": 100,
+    "advantage_network_train_steps": 50,
+    "baseline_network_train_steps": 50,
     "policy_network_layers": [32, 32],
     "advantage_network_layers": [32, 32],
     "baseline_network_layers": [32, 32],

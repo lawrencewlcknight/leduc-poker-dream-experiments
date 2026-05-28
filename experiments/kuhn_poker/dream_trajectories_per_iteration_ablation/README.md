@@ -4,9 +4,9 @@ This experiment tests how the number of outcome-sampling trajectories per DREAM 
 
 The default variants are:
 
-- `traversals_160`: 160 traversals per player per iteration;
-- `traversals_320_exp_baseline`: 320 traversals, matching the aligned DREAM baseline;
-- `traversals_640`: 640 traversals.
+- `traversals_80`: 80 traversals per player per iteration;
+- `traversals_160_exp_baseline`: 160 traversals, matching the aligned DREAM baseline;
+- `traversals_320`: 320 traversals.
 
 All other core DREAM training settings are held fixed. Outputs include exploitability by iteration, nodes touched, and sampled trajectories so convergence can be compared both by update count and by environment-interaction cost.
 
@@ -26,7 +26,7 @@ python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run \
   --advantage-network-train-steps 20 \
   --baseline-network-train-steps 20 \
   --evaluation-interval 5 \
-  --variants traversals_160,traversals_320_exp_baseline \
+  --variants traversals_80,traversals_160_exp_baseline \
   --output-root outputs/smoke_tests/dream_trajectories_per_iteration_ablation
 ```
 

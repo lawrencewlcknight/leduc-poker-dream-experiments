@@ -16,13 +16,13 @@ EXPERIMENT_CONFIG = {
     "experiment_name": "kuhn_poker_dream_trajectories_per_iteration_ablation",
     "game_name": "kuhn_poker",
     "algorithm": "DREAM-style OpenSpiel trajectories-per-iteration ablation",
-    "num_iterations": 500,
-    "num_traversals": 320,
+    "num_iterations": 175,
+    "num_traversals": 160,
     "evaluation_interval": 25,
     "policy_network_train_every": 25,
-    "policy_network_train_steps": 200,
-    "advantage_network_train_steps": 100,
-    "baseline_network_train_steps": 100,
+    "policy_network_train_steps": 100,
+    "advantage_network_train_steps": 50,
+    "baseline_network_train_steps": 50,
     "policy_network_layers": [32, 32],
     "advantage_network_layers": [32, 32],
     "baseline_network_layers": [32, 32],
@@ -46,26 +46,26 @@ EXPERIMENT_CONFIG = {
 }
 
 
-BASELINE_VARIANT = "traversals_320_exp_baseline"
+BASELINE_VARIANT = "traversals_160_exp_baseline"
 
 
 TRAJECTORY_VARIANTS = [
     {
-        "variant_id": "traversals_160",
-        "label": "160 traversals",
-        "num_traversals": 160,
+        "variant_id": "traversals_80",
+        "label": "80 traversals",
+        "num_traversals": 80,
         "description": "Half the baseline trajectory count",
     },
     {
-        "variant_id": "traversals_320_exp_baseline",
-        "label": "320 traversals",
-        "num_traversals": 320,
+        "variant_id": "traversals_160_exp_baseline",
+        "label": "160 traversals",
+        "num_traversals": 160,
         "description": "DREAM baseline trajectory count",
     },
     {
-        "variant_id": "traversals_640",
-        "label": "640 traversals",
-        "num_traversals": 640,
+        "variant_id": "traversals_320",
+        "label": "320 traversals",
+        "num_traversals": 320,
         "description": "Double the baseline trajectory count",
     },
 ]

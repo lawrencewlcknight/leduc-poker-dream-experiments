@@ -4,10 +4,9 @@ This experiment tests whether DREAM performance in Kuhn poker is limited by the 
 
 The default variants are:
 
-- `baseline_steps_50`: 50 baseline-network updates per player per iteration;
-- `baseline_steps_100_exp_baseline`: 100 updates, matching the aligned DREAM baseline;
-- `baseline_steps_200`: 200 updates;
-- `baseline_steps_500`: 500 updates.
+- `baseline_steps_25`: 25 baseline-network updates per player per iteration;
+- `baseline_steps_50_exp_baseline`: 50 updates, matching the aligned DREAM baseline;
+- `baseline_steps_100`: 100 updates.
 
 All other core DREAM training settings are held fixed.
 
@@ -27,7 +26,7 @@ python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run \
   --policy-network-train-steps 20 \
   --advantage-network-train-steps 20 \
   --evaluation-interval 5 \
-  --variants baseline_steps_50,baseline_steps_100_exp_baseline \
+  --variants baseline_steps_25,baseline_steps_50_exp_baseline \
   --output-root outputs/smoke_tests/dream_baseline_network_budget_ablation
 ```
 

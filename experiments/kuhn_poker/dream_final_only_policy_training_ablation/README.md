@@ -5,7 +5,7 @@ This experiment tests whether the timing of average-policy network fitting affec
 The advantage and baseline networks are still trained during traversal exactly as in the DREAM baseline. The ablation changes only the average-policy extraction schedule used for evaluation through the OpenSpiel policy interface:
 
 - `intermittent_every_25_baseline` trains the average-policy network every 25 DREAM iterations and at the final iteration.
-- `final_only_200_steps` trains the average-policy network only once at the end for one baseline policy-training event.
+- `final_only_100_steps` trains the average-policy network only once at the end for one baseline policy-training event.
 - `final_only_matched_steps` trains the average-policy network only once at the end with the same total policy-gradient budget as the intermittent arm.
 
 Because traversal policies are generated from the advantage networks rather than from the average-policy network, this is best interpreted as a policy-extraction stability experiment rather than a test of changed regret-learning dynamics.

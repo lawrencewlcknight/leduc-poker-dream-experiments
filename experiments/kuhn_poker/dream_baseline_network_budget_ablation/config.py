@@ -16,13 +16,13 @@ EXPERIMENT_CONFIG = {
     "experiment_name": "kuhn_poker_dream_baseline_network_budget_ablation",
     "game_name": "kuhn_poker",
     "algorithm": "DREAM-style OpenSpiel baseline-network budget ablation",
-    "num_iterations": 500,
-    "num_traversals": 320,
+    "num_iterations": 175,
+    "num_traversals": 160,
     "evaluation_interval": 25,
     "policy_network_train_every": 25,
-    "policy_network_train_steps": 200,
-    "advantage_network_train_steps": 100,
-    "baseline_network_train_steps": 100,
+    "policy_network_train_steps": 100,
+    "advantage_network_train_steps": 50,
+    "baseline_network_train_steps": 50,
     "policy_network_layers": [32, 32],
     "advantage_network_layers": [32, 32],
     "baseline_network_layers": [32, 32],
@@ -46,33 +46,27 @@ EXPERIMENT_CONFIG = {
 }
 
 
-BASELINE_VARIANT = "baseline_steps_100_exp_baseline"
+BASELINE_VARIANT = "baseline_steps_50_exp_baseline"
 
 
 BUDGET_VARIANTS = [
     {
-        "variant_id": "baseline_steps_50",
-        "label": "50 baseline steps",
-        "baseline_network_train_steps": 50,
+        "variant_id": "baseline_steps_25",
+        "label": "25 baseline steps",
+        "baseline_network_train_steps": 25,
         "description": "Reduced baseline-network update budget",
     },
     {
-        "variant_id": "baseline_steps_100_exp_baseline",
-        "label": "100 baseline steps",
-        "baseline_network_train_steps": 100,
+        "variant_id": "baseline_steps_50_exp_baseline",
+        "label": "50 baseline steps",
+        "baseline_network_train_steps": 50,
         "description": "DREAM baseline configuration",
     },
     {
-        "variant_id": "baseline_steps_200",
-        "label": "200 baseline steps",
-        "baseline_network_train_steps": 200,
+        "variant_id": "baseline_steps_100",
+        "label": "100 baseline steps",
+        "baseline_network_train_steps": 100,
         "description": "Increased baseline-network update budget",
-    },
-    {
-        "variant_id": "baseline_steps_500",
-        "label": "500 baseline steps",
-        "baseline_network_train_steps": 500,
-        "description": "High baseline-network update budget",
     },
 ]
 

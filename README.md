@@ -135,7 +135,7 @@ Runs a paired constant-vs-decayed learning-rate comparison for the DREAM-style b
 
 [`experiments/kuhn_poker/dream_baseline_network_budget_ablation/`](experiments/kuhn_poker/dream_baseline_network_budget_ablation/README.md)
 
-Runs a matched-seed ablation over the number of supervised updates allocated to the learned baseline/control-variate networks. The DREAM baseline arm uses 100 baseline-network updates per player per iteration; comparison arms use 50, 200, and 500 updates while holding traversal budget, advantage-network training, average-policy training, architecture, replay capacity, learning rate, exploration, and seeds fixed.
+Runs a matched-seed ablation over the number of supervised updates allocated to the learned baseline/control-variate networks. The DREAM baseline arm uses 50 baseline-network updates per player per iteration; comparison arms use 25 and 100 updates while holding traversal budget, advantage-network training, average-policy training, architecture, replay capacity, learning rate, exploration, and seeds fixed.
 
 **Question:** is DREAM performance in Kuhn poker limited by baseline-network fitting budget, as measured by exploitability, policy-value error, baseline diagnostics, and advantage-target variance?
 
@@ -151,7 +151,7 @@ Runs a matched-seed ablation over the epsilon-mixed sampling policy used during 
 
 [`experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/`](experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/README.md)
 
-Runs a matched-seed ablation over the number of outcome-sampling traversals per player per DREAM iteration. The DREAM baseline arm uses 320 traversals; comparison arms use 160 and 640 traversals while holding the training schedule, network budgets, architecture, replay capacity, learning rate, exploration rate, and seeds fixed.
+Runs a matched-seed ablation over the number of outcome-sampling traversals per player per DREAM iteration. The DREAM baseline arm uses 160 traversals; comparison arms use 80 and 320 traversals while holding the training schedule, network budgets, architecture, replay capacity, learning rate, exploration rate, and seeds fixed.
 
 **Question:** does increasing trajectories per iteration improve DREAM performance in Kuhn poker, and does any gain remain when performance is measured by nodes touched or sampled trajectories rather than iteration count?
 
@@ -280,7 +280,7 @@ python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run \
   --policy-network-train-steps 20 \
   --advantage-network-train-steps 20 \
   --evaluation-interval 5 \
-  --variants baseline_steps_50,baseline_steps_100_exp_baseline \
+  --variants baseline_steps_25,baseline_steps_50_exp_baseline \
   --output-root outputs/smoke_tests/dream_baseline_network_budget_ablation
 
 python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run \
@@ -300,7 +300,7 @@ python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run \
   --advantage-network-train-steps 20 \
   --baseline-network-train-steps 20 \
   --evaluation-interval 5 \
-  --variants traversals_160,traversals_320_exp_baseline \
+  --variants traversals_80,traversals_160_exp_baseline \
   --output-root outputs/smoke_tests/dream_trajectories_per_iteration_ablation
 ```
 
