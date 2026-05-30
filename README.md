@@ -1,11 +1,11 @@
 
-# Kuhn Poker DREAM Experiments
+# Leduc Poker DREAM Experiments
 
-This repository contains reproducible experiments for evaluating a DREAM-style neural regret-minimisation algorithm on Kuhn poker using DeepMind's OpenSpiel library.
+This repository contains reproducible experiments for evaluating a DREAM-style neural regret-minimisation algorithm on Leduc poker using DeepMind's OpenSpiel library.
 
-The immediate aim is to establish a thesis-quality DREAM baseline that is aligned with the sister Deep CFR and ESCHER repositories. Kuhn poker is used as the diagnostic environment because it is a small two-player zero-sum imperfect-information game with a known game value and exact exploitability evaluation. The results from this repository are intended to sit alongside the Deep CFR and ESCHER Kuhn poker experiments in an MPhil thesis on neural CFR methods for poker.
+The immediate aim is to establish a thesis-quality DREAM baseline that is aligned with the sister Deep CFR and ESCHER repositories. Leduc poker is used as the diagnostic environment because it is a small two-player zero-sum imperfect-information game with a known game value and exact exploitability evaluation. The results from this repository are intended to sit alongside the Deep CFR and ESCHER Leduc poker experiments in an MPhil thesis on neural CFR methods for poker.
 
-The repository is organised so that each experiment can be run independently while sharing reusable DREAM code. The shared `dream_poker` package contains the DREAM-style solver, neural-network definitions, replay buffers, plotting helpers, seeding utilities, and experiment export utilities. Each experiment lives in its own package under `experiments/kuhn_poker/<experiment_name>/`.
+The repository is organised so that each experiment can be run independently while sharing reusable DREAM code. The shared `dream_poker` package contains the DREAM-style solver, neural-network definitions, replay buffers, plotting helpers, seeding utilities, and experiment export utilities. Each experiment lives in its own package under `experiments/leduc_poker/<experiment_name>/`.
 
 > Important note: this is an OpenSpiel DREAM-style implementation designed for comparable thesis experiments. It is not a bit-for-bit port of the official PokerRL DREAM repository.
 
@@ -26,10 +26,10 @@ The repository is organised so that each experiment can be run independently whi
 │   ├── network_budget.py                             # Network-update budget ablation helpers
 │   ├── variant_ablation.py                           # Generic matched-variant ablation helpers
 │   ├── plotting.py                                   # Thesis-style plots
-│   ├── constants.py                                  # Kuhn value, thresholds, seed lists
+│   ├── constants.py                                  # Leduc value, thresholds, seed lists
 │   └── seeding.py                                    # PyTorch/NumPy/Python seeding helpers
 ├── experiments/
-│   └── kuhn_poker/
+│   └── leduc_poker/
 │       ├── dream_multiseed_baseline/                 # Experiment 1
 │       │   ├── config.py
 │       │   ├── run.py
@@ -83,17 +83,17 @@ The repository is organised so that each experiment can be run independently whi
 
 ## Experiments
 
-### 1. Kuhn poker DREAM-style multi-seed baseline
+### 1. Leduc poker DREAM-style multi-seed baseline
 
-[`experiments/kuhn_poker/dream_multiseed_baseline/`](experiments/kuhn_poker/dream_multiseed_baseline/README.md)
+[`experiments/leduc_poker/dream_multiseed_baseline/`](experiments/leduc_poker/dream_multiseed_baseline/README.md)
 
-Runs the aligned DREAM-style baseline on OpenSpiel `kuhn_poker` across matched random seeds. The primary metric is exploitability, reported as NashConv divided by two. Secondary metrics include policy-value error from the known Kuhn game value, nodes touched, wall-clock time, and final/best/final-window exploitability. Diagnostic metrics include policy loss, advantage-network loss, learned-baseline loss, replay-buffer sizes, target variance, policy entropy, and gradient norms.
+Runs the aligned DREAM-style baseline on OpenSpiel `leduc_poker` across matched random seeds. The primary metric is exploitability, reported as NashConv divided by two. Secondary metrics include policy-value error from the known Leduc game value, nodes touched, wall-clock time, and final/best/final-window exploitability. Diagnostic metrics include policy loss, advantage-network loss, learned-baseline loss, replay-buffer sizes, target variance, policy entropy, and gradient norms.
 
-**Question:** under a fixed training protocol, does the DREAM-style implementation learn a low-exploitability average policy in Kuhn poker, and how variable is the result across random seeds?
+**Question:** under a fixed training protocol, does the DREAM-style implementation learn a low-exploitability average policy in Leduc poker, and how variable is the result across random seeds?
 
 ### 2. DREAM final-only average-policy training ablation
 
-[`experiments/kuhn_poker/dream_final_only_policy_training_ablation/`](experiments/kuhn_poker/dream_final_only_policy_training_ablation/README.md)
+[`experiments/leduc_poker/dream_final_only_policy_training_ablation/`](experiments/leduc_poker/dream_final_only_policy_training_ablation/README.md)
 
 Runs the DREAM-style baseline with three average-policy extraction schedules: intermittent training every 25 iterations, final-only training for one policy-update event, and final-only training with the same total policy-gradient budget as the intermittent arm. The advantage and learned-baseline updates are held fixed.
 
@@ -101,7 +101,7 @@ Runs the DREAM-style baseline with three average-policy extraction schedules: in
 
 ### 3. DREAM checkpoint-stability head-to-head analysis
 
-[`experiments/kuhn_poker/dream_checkpoint_stability/`](experiments/kuhn_poker/dream_checkpoint_stability/README.md)
+[`experiments/leduc_poker/dream_checkpoint_stability/`](experiments/leduc_poker/dream_checkpoint_stability/README.md)
 
 Runs a two-stage checkpoint-stability experiment. The training stage saves lightweight average-policy network snapshots at fixed iterations. The analysis stage reloads those snapshots and computes exact pairwise, seat-averaged head-to-head expected values between checkpoints, alongside exploitability and monotonicity summaries.
 
@@ -109,15 +109,15 @@ Runs a two-stage checkpoint-stability experiment. The training stage saves light
 
 ### 4. DREAM constrained solver-parameter random search
 
-[`experiments/kuhn_poker/dream_constrained_random_search/`](experiments/kuhn_poker/dream_constrained_random_search/README.md)
+[`experiments/leduc_poker/dream_constrained_random_search/`](experiments/leduc_poker/dream_constrained_random_search/README.md)
 
 Runs a bounded two-stage random search over DREAM solver parameters, including traversal count, exploration rate, network width/depth, learning rate, replay-memory capacity, batch size, and supervised update budgets. Screening identifies promising configurations; confirmation reruns the baseline and selected candidates with a longer budget and matched seeds.
 
-**Question:** can DREAM performance in Kuhn poker be improved materially by tuning implementation and optimisation parameters while keeping the DREAM-style algorithm fixed?
+**Question:** can DREAM performance in Leduc poker be improved materially by tuning implementation and optimisation parameters while keeping the DREAM-style algorithm fixed?
 
 ### 5. DREAM fair warm-start ablation
 
-[`experiments/kuhn_poker/dream_warm_start_ablation/`](experiments/kuhn_poker/dream_warm_start_ablation/README.md)
+[`experiments/leduc_poker/dream_warm_start_ablation/`](experiments/leduc_poker/dream_warm_start_ablation/README.md)
 
 Runs a paired continuous-vs-checkpoint/resume comparison. The warm-start arm saves the full DREAM solver state at an intermediate iteration, reloads it into a fresh solver, and resumes to the same final training budget as the continuous arm.
 
@@ -125,37 +125,37 @@ Runs a paired continuous-vs-checkpoint/resume comparison. The warm-start arm sav
 
 ### 6. DREAM learning-rate schedule ablation
 
-[`experiments/kuhn_poker/dream_lr_schedule_ablation/`](experiments/kuhn_poker/dream_lr_schedule_ablation/README.md)
+[`experiments/leduc_poker/dream_lr_schedule_ablation/`](experiments/leduc_poker/dream_lr_schedule_ablation/README.md)
 
 Runs a paired constant-vs-decayed learning-rate comparison for the DREAM-style baseline. The OpenSpiel game, total training budget, traversal count, replay capacities, network architectures, supervised update budgets, average-policy training schedule, exploration rate, and matched seeds are held fixed; the intended treatment variable is only the optimiser learning-rate schedule.
 
-**Question:** does a decaying learning-rate schedule improve DREAM performance in Kuhn poker relative to the aligned constant-learning-rate baseline?
+**Question:** does a decaying learning-rate schedule improve DREAM performance in Leduc poker relative to the aligned constant-learning-rate baseline?
 
 ### 7. DREAM baseline-network training-budget ablation
 
-[`experiments/kuhn_poker/dream_baseline_network_budget_ablation/`](experiments/kuhn_poker/dream_baseline_network_budget_ablation/README.md)
+[`experiments/leduc_poker/dream_baseline_network_budget_ablation/`](experiments/leduc_poker/dream_baseline_network_budget_ablation/README.md)
 
 Runs a matched-seed ablation over the number of supervised updates allocated to the learned baseline/control-variate networks. The DREAM baseline arm uses 50 baseline-network updates per player per iteration; comparison arms use 25 and 100 updates while holding traversal budget, advantage-network training, average-policy training, architecture, replay capacity, learning rate, exploration, and seeds fixed.
 
-**Question:** is DREAM performance in Kuhn poker limited by baseline-network fitting budget, as measured by exploitability, policy-value error, baseline diagnostics, and advantage-target variance?
+**Question:** is DREAM performance in Leduc poker limited by baseline-network fitting budget, as measured by exploitability, policy-value error, baseline diagnostics, and advantage-target variance?
 
 ### 8. DREAM epsilon-exploration ablation
 
-[`experiments/kuhn_poker/dream_epsilon_exploration_ablation/`](experiments/kuhn_poker/dream_epsilon_exploration_ablation/README.md)
+[`experiments/leduc_poker/dream_epsilon_exploration_ablation/`](experiments/leduc_poker/dream_epsilon_exploration_ablation/README.md)
 
 Runs a matched-seed ablation over the epsilon-mixed sampling policy used during DREAM outcome-sampling traversals. The DREAM baseline arm uses epsilon `0.06`; comparison arms use `0.03` and `0.10` while holding traversal budget, network training budgets, architecture, replay capacity, learning rate, average-policy training schedule, and seeds fixed.
 
-**Question:** how does the exploration rate affect game-tree coverage, target variance, policy extraction, and final exploitability in Kuhn poker?
+**Question:** how does the exploration rate affect game-tree coverage, target variance, policy extraction, and final exploitability in Leduc poker?
 
 ### 9. DREAM trajectories-per-iteration ablation
 
-[`experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/`](experiments/kuhn_poker/dream_trajectories_per_iteration_ablation/README.md)
+[`experiments/leduc_poker/dream_trajectories_per_iteration_ablation/`](experiments/leduc_poker/dream_trajectories_per_iteration_ablation/README.md)
 
 Runs a matched-seed ablation over the number of outcome-sampling traversals per player per DREAM iteration. The DREAM baseline arm uses 160 traversals; comparison arms use 80 and 320 traversals while holding the training schedule, network budgets, architecture, replay capacity, learning rate, exploration rate, and seeds fixed.
 
-**Question:** does increasing trajectories per iteration improve DREAM performance in Kuhn poker, and does any gain remain when performance is measured by nodes touched or sampled trajectories rather than iteration count?
+**Question:** does increasing trajectories per iteration improve DREAM performance in Leduc poker, and does any gain remain when performance is measured by nodes touched or sampled trajectories rather than iteration count?
 
-Future DREAM ablations should be added as separate experiment folders under `experiments/kuhn_poker/`, while reusing the shared `dream_poker` package and output conventions.
+Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
 
@@ -177,37 +177,37 @@ From the repository root:
 
 ```bash
 # Experiment 1 — full aligned DREAM-style baseline
-python -m experiments.kuhn_poker.dream_multiseed_baseline.run
+python -m experiments.leduc_poker.dream_multiseed_baseline.run
 
 # Experiment 2 — final-only average-policy training ablation
-python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run
+python -m experiments.leduc_poker.dream_final_only_policy_training_ablation.run
 
 # Experiment 3 — checkpoint-stability training plus head-to-head analysis
-python -m experiments.kuhn_poker.dream_checkpoint_stability.run
+python -m experiments.leduc_poker.dream_checkpoint_stability.run
 
 # Experiment 4 — constrained solver-parameter random search
-python -m experiments.kuhn_poker.dream_constrained_random_search.run
+python -m experiments.leduc_poker.dream_constrained_random_search.run
 
 # Experiment 5 — fair warm-start/checkpoint-resume ablation
-python -m experiments.kuhn_poker.dream_warm_start_ablation.run
+python -m experiments.leduc_poker.dream_warm_start_ablation.run
 
 # Experiment 6 — learning-rate schedule ablation
-python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run
+python -m experiments.leduc_poker.dream_lr_schedule_ablation.run
 
 # Experiment 7 — baseline-network training-budget ablation
-python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run
+python -m experiments.leduc_poker.dream_baseline_network_budget_ablation.run
 
 # Experiment 8 — epsilon-exploration ablation
-python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run
+python -m experiments.leduc_poker.dream_epsilon_exploration_ablation.run
 
 # Experiment 9 — trajectories-per-iteration ablation
-python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run
+python -m experiments.leduc_poker.dream_trajectories_per_iteration_ablation.run
 ```
 
 For a quick smoke test:
 
 ```bash
-python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+python -m experiments.leduc_poker.dream_multiseed_baseline.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -217,7 +217,7 @@ python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_multiseed_baseline
 
-python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run \
+python -m experiments.leduc_poker.dream_final_only_policy_training_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -227,7 +227,7 @@ python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_final_only_policy_training_ablation
 
-python -m experiments.kuhn_poker.dream_checkpoint_stability.run \
+python -m experiments.leduc_poker.dream_checkpoint_stability.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -238,7 +238,7 @@ python -m experiments.kuhn_poker.dream_checkpoint_stability.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_checkpoint_stability
 
-python -m experiments.kuhn_poker.dream_constrained_random_search.run \
+python -m experiments.leduc_poker.dream_constrained_random_search.run \
   --screening-seeds 1234 \
   --confirmation-seeds 1234 \
   --screening-iterations 5 \
@@ -252,7 +252,7 @@ python -m experiments.kuhn_poker.dream_constrained_random_search.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_constrained_random_search
 
-python -m experiments.kuhn_poker.dream_warm_start_ablation.run \
+python -m experiments.leduc_poker.dream_warm_start_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --warm-start-iteration 5 \
@@ -263,7 +263,7 @@ python -m experiments.kuhn_poker.dream_warm_start_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_warm_start_ablation
 
-python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run \
+python -m experiments.leduc_poker.dream_lr_schedule_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -273,7 +273,7 @@ python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_lr_schedule_ablation
 
-python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run \
+python -m experiments.leduc_poker.dream_baseline_network_budget_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -283,7 +283,7 @@ python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run \
   --variants baseline_steps_25,baseline_steps_50_exp_baseline \
   --output-root outputs/smoke_tests/dream_baseline_network_budget_ablation
 
-python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run \
+python -m experiments.leduc_poker.dream_epsilon_exploration_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --traversals 50 \
@@ -293,7 +293,7 @@ python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_epsilon_exploration_ablation
 
-python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run \
+python -m experiments.leduc_poker.dream_trajectories_per_iteration_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
   --policy-network-train-steps 20 \
@@ -341,7 +341,7 @@ plots/dream_policy_training_paired_delta_exploitability.png
 Checkpoint-stability experiments additionally export:
 
 ```text
-policy_snapshots/kuhn_poker_dream_seed_<seed>_policy_snapshot_<iteration>_iters.pt
+policy_snapshots/leduc_poker_dream_seed_<seed>_policy_snapshot_<iteration>_iters.pt
 head_to_head_analysis/checkpoint_inventory.csv
 head_to_head_analysis/checkpoint_exploitability_metrics.csv
 head_to_head_analysis/head_to_head_exact_pairwise.csv
@@ -475,7 +475,7 @@ plots/dream_trajectories_per_iteration_paired_sample_trajectory_auc_delta.png
 
 When adding a new DREAM experiment, follow the same pattern as the baseline:
 
-1. create a new folder under `experiments/kuhn_poker/`;
+1. create a new folder under `experiments/leduc_poker/`;
 2. include a `config.py`, `run.py`, and `README.md`;
 3. hold the baseline protocol fixed except for the intended treatment variable;
 4. use matched seeds where possible;

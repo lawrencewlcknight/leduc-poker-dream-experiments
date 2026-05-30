@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_utils import (
     average_policy_value_target,
     compute_auc,
@@ -168,7 +168,7 @@ def create_warm_start_plots(
     plot_arm_curves(
         curves_df,
         "policy_value_error",
-        "Absolute error from -1/18",
+        "Absolute error from Leduc game value",
         "DREAM Warm-Start Ablation: Policy-Value Error",
         plot_dir / "dream_warm_start_policy_value_error.png",
     )
@@ -241,7 +241,7 @@ def plot_arm_curves(
     output_path: Path,
     *,
     x_col: str = "iteration",
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
     for arm in WARM_START_ARMS:
@@ -278,7 +278,7 @@ def plot_summary_by_arm(
     ylabel: str,
     title: str,
     output_path: Path,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     grouped = summary_df.groupby("arm")[metric]
     means = [grouped.mean().get(arm, np.nan) for arm in WARM_START_ARMS]

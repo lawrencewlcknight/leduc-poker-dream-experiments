@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.constants import EXPLOITABILITY_THRESHOLD, KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import EXPLOITABILITY_THRESHOLD, LEDUC_AVERAGE_POLICY_VALUE_TARGET
 
 try:
     import pyspiel
@@ -340,7 +340,7 @@ def make_tuning_plots(
     confirmation_summary: pd.DataFrame,
     confirmation_curves: pd.DataFrame,
     confirmation_agg: pd.DataFrame,
-    average_policy_value_target_value: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target_value: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> List[Path]:
     plot_dir = ensure_dir(run_dir / "plots")
     table_dir = ensure_dir(run_dir / "tables")
@@ -466,7 +466,7 @@ def make_tuning_plots(
                 "iteration",
                 "policy_value_error",
                 "DREAM random search confirmation: policy-value error",
-                "Absolute error from -1/18",
+                "Absolute error from Leduc game value",
                 plot_dir / "confirmation_policy_value_error.png",
             )
         )
@@ -519,7 +519,7 @@ def _barh_metric(
     title: str,
     xlabel: str,
     output_path: Path,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.barh(df["config_label"], df[metric_col], xerr=df.get(se_col), capsize=3)
@@ -545,7 +545,7 @@ def _plot_grouped_curve(
     title: str,
     ylabel: str,
     output_path: Path,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5.2))
     for label, group in curves_df.groupby("config_label"):

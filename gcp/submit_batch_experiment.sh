@@ -78,8 +78,8 @@ WORKDIR=/workspace
 mkdir -p "$WORKDIR"
 cd "$WORKDIR"
 
-git clone --depth 1 https://github.com/lawrencewlcknight/kuhn-poker-dream-experiments.git
-cd kuhn-poker-dream-experiments
+git clone --depth 1 https://github.com/lawrencewlcknight/leduc-poker-dream-experiments.git
+cd leduc-poker-dream-experiments
 
 export HOME="${{HOME:-/root}}"
 export TMPDIR="/tmp"
@@ -99,8 +99,8 @@ df -h || true
 lscpu | head -30 || true
 
 # Keep experiment dependencies isolated from the Google Cloud CLI Python runtime.
-python3.9 -m venv --copies /tmp/kuhn-dream-venv
-source /tmp/kuhn-dream-venv/bin/activate
+python3.9 -m venv --copies /tmp/leduc-dream-venv
+source /tmp/leduc-dream-venv/bin/activate
 
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir --no-build-isolation -r requirements.txt

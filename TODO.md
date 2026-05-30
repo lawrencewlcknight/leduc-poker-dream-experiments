@@ -1,7 +1,7 @@
 
 # TODO
 
-- Add future DREAM ablation experiments as separate folders under `experiments/kuhn_poker/`, reusing `dream_poker.experiment_runner` where possible.
+- Add future DREAM ablation experiments as separate folders under `experiments/leduc_poker/`, reusing `dream_poker.experiment_runner` where possible.
 - Reuse `dream_poker.checkpointing` for future checkpoint or head-to-head stability experiments.
 - Reuse `dream_poker.random_search` for future solver-parameter or hyperparameter tuning experiments.
 - Reuse `dream_poker.warm_start` for future checkpoint/resume fidelity experiments.

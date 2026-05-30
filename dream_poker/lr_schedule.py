@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_utils import (
     average_policy_value_target,
     compute_auc,
@@ -212,7 +212,7 @@ def create_lr_schedule_plots(
         "iteration",
         "policy_value_error",
         "DREAM learning-rate schedule ablation: policy-value error",
-        "Absolute error from -1/18",
+        "Absolute error from Leduc game value",
         plots_dir / "dream_lr_schedule_policy_value_error.png",
     )
     plot_variant_mean_curve(
@@ -299,7 +299,7 @@ def plot_variant_mean_curve(
     title: str,
     ylabel: str,
     output_path: Path,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for variant, variant_df in curves_df.groupby("variant"):
@@ -333,7 +333,7 @@ def plot_final_metric_bar(
     title: str,
     ylabel: str,
     output_path: Path,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     grouped = summary_df.groupby("variant")[metric]
     means = grouped.mean()

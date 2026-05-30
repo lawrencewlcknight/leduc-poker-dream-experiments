@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping, Optional, Sequence, Union
 import numpy as np
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET
 
 
 def ensure_dir(path: Union[str, Path]) -> Path:
@@ -59,7 +59,7 @@ def average_policy_value_from_player_0(player_0_value: float) -> float:
 def average_policy_value_target(config: Optional[Mapping] = None) -> float:
     if config is not None and "average_policy_value_target" in config:
         return float(config["average_policy_value_target"])
-    return float(KUHN_AVERAGE_POLICY_VALUE_TARGET)
+    return float(LEDUC_AVERAGE_POLICY_VALUE_TARGET)
 
 
 def ensure_average_policy_value_columns(

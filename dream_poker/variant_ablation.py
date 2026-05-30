@@ -8,7 +8,7 @@ from typing import Dict, Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_utils import (
     compute_auc,
     ensure_average_policy_value_columns,
@@ -161,7 +161,7 @@ def create_variant_ablation_plots(
     plot_prefix: str,
     title_prefix: str,
     diagnostic_metrics: Sequence[tuple[str, str, str]] = (),
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
     variant_order = [get_variant_id(variant) for variant in variants]
@@ -214,7 +214,7 @@ def create_variant_ablation_plots(
         "iteration",
         "policy_value_error",
         f"{title_prefix}: Policy-Value Error",
-        "Absolute error from -1/18",
+        "Absolute error from Leduc game value",
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_policy_value_error.png",

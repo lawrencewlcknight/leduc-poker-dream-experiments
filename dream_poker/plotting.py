@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET
 from dream_poker.experiment_utils import ensure_dir
 
 
@@ -45,7 +45,7 @@ def add_nash_exploitability_target(
 def add_average_policy_value_target(
     ax,
     *,
-    target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
     axis: str = "y",
     label: str = AVERAGE_POLICY_VALUE_TARGET_LABEL,
 ) -> None:
@@ -66,7 +66,7 @@ def plot_mean_curve(
     ylabel: str,
     output_path: Optional[Path] = None,
     equilibrium_line: Optional[float] = None,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for seed, seed_df in curves_df.groupby("seed"):
@@ -102,7 +102,7 @@ def plot_summary_bar(
     title: str,
     ylabel: str,
     output_path: Optional[Path] = None,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(6.8, 4.6))
     mean = summary_df[metric].mean()
@@ -128,7 +128,7 @@ def plot_summary_bars(
     metrics: Sequence[str],
     title: str,
     output_path: Optional[Path] = None,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
     labels = [metric.replace("_", " ").title() for metric in metrics]
@@ -163,7 +163,7 @@ def plot_metric_bar_by_variant(
     variant_order: Sequence[str],
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ):
     order = ordered_variants(summary_df, variant_order)
     labels = [variant_labels.get(v, v) for v in order]
@@ -196,7 +196,7 @@ def plot_curve_by_variant(
     variant_order: Sequence[str],
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ):
     fig, ax = plt.subplots(figsize=(9.0, 5.2))
     for variant in ordered_variants(curves_df, variant_order):
@@ -285,7 +285,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "iteration",
         "policy_value_error",
         "DREAM Baseline: Policy-Value Error",
-        "Absolute error from -1/18",
+        "Absolute error from Leduc game value",
         plot_dir / "dream_policy_value_error.png",
     )
     plot_mean_curve(

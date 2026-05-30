@@ -117,7 +117,7 @@ The core metric names should remain stable across experiments:
 - `baseline_reward_variance_sampled`
 - `epsilon`
 
-`policy_value_player_0` is the raw OpenSpiel player-0 value. `average_policy_value` uses the same player-0 convention for headline charts. In Kuhn poker the default plotted target is `-1/18` (approximately `-0.0556`). The target is configured per experiment through `average_policy_value_target` so the same plotting code can be reused for games with a different equilibrium value.
+`policy_value_player_0` is the raw OpenSpiel player-0 value. `average_policy_value` uses the same player-0 convention for headline charts. In Leduc poker the default plotted target is approximately `-0.085606`. The target is configured per experiment through `average_policy_value_target` so the same plotting code can be reused for games with a different equilibrium value.
 - `num_traversals`
 - `sampled_trajectories`
 - `trajectories_per_iteration`

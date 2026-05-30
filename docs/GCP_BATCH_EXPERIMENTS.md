@@ -1,6 +1,6 @@
 # Running the DREAM experiments on Google Cloud Batch
 
-This guide explains how to run the DREAM Kuhn poker experiments on Google Cloud using Google Batch. The workflow is designed to be repeatable and command-line driven:
+This guide explains how to run the DREAM Leduc poker experiments on Google Cloud using Google Batch. The workflow is designed to be repeatable and command-line driven:
 
 1. configure Google Cloud locally;
 2. create a Cloud Storage bucket for outputs;
@@ -71,7 +71,7 @@ gcloud services enable \
 Create a regional bucket in the same region as the Batch jobs:
 
 ```bash
-export BUCKET_NAME="${PROJECT_ID}-kuhn-poker-dream-results"
+export BUCKET_NAME="${PROJECT_ID}-leduc-poker-dream-results"
 export BUCKET="gs://${BUCKET_NAME}"
 
 gcloud storage buckets create "$BUCKET" \
@@ -94,11 +94,11 @@ If the bucket exists and is accessible, this command will print metadata such as
 Create a dedicated service account:
 
 ```bash
-export SA_NAME="kuhn-dream-runner"
+export SA_NAME="leduc-dream-runner"
 export SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud iam service-accounts create "$SA_NAME" \
-  --display-name="Kuhn poker DREAM experiment runner" \
+  --display-name="Leduc poker DREAM experiment runner" \
   --project="$PROJECT_ID"
 ```
 
@@ -153,8 +153,8 @@ Before submitting jobs from a new shell session, set:
 ```bash
 export PROJECT_ID="your-gcp-project-id"
 export REGION="europe-west1"
-export BUCKET="gs://${PROJECT_ID}-kuhn-poker-dream-results"
-export SA_EMAIL="kuhn-dream-runner@${PROJECT_ID}.iam.gserviceaccount.com"
+export BUCKET="gs://${PROJECT_ID}-leduc-poker-dream-results"
+export SA_EMAIL="leduc-dream-runner@${PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud config set project "$PROJECT_ID"
 ```
@@ -267,8 +267,8 @@ WORKDIR=/workspace
 mkdir -p "$WORKDIR"
 cd "$WORKDIR"
 
-git clone --depth 1 https://github.com/lawrencewlcknight/kuhn-poker-dream-experiments.git
-cd kuhn-poker-dream-experiments
+git clone --depth 1 https://github.com/lawrencewlcknight/leduc-poker-dream-experiments.git
+cd leduc-poker-dream-experiments
 
 export HOME="${{HOME:-/root}}"
 export TMPDIR="/tmp"
@@ -288,8 +288,8 @@ df -h || true
 lscpu | head -30 || true
 
 # Keep experiment dependencies isolated from the Google Cloud CLI Python runtime.
-python3.9 -m venv --copies /tmp/kuhn-dream-venv
-source /tmp/kuhn-dream-venv/bin/activate
+python3.9 -m venv --copies /tmp/leduc-dream-venv
+source /tmp/leduc-dream-venv/bin/activate
 
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install --no-cache-dir --no-build-isolation -r requirements.txt
@@ -403,7 +403,7 @@ Before running a full experiment, submit a small DREAM baseline smoke test:
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-smoke-baseline-$(date +%Y%m%d-%H%M%S)" \
-  "python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  "python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --seeds 1234 \
     --iterations 10 \
     --traversals 50 \
@@ -420,12 +420,12 @@ Before running a full experiment, submit a small DREAM baseline smoke test:
 
 The script prints the Batch script before submission. Check that:
 
-- it clones `kuhn-poker-dream-experiments`;
+- it clones `leduc-poker-dream-experiments`;
 - it creates the virtual environment with `python3.9`;
 - the upload line uses `gsutil`, for example:
 
 ```bash
-gsutil -m cp -r outputs "gs://your-project-id-kuhn-poker-dream-results/dream-smoke-baseline-.../"
+gsutil -m cp -r outputs "gs://your-project-id-leduc-poker-dream-results/dream-smoke-baseline-.../"
 ```
 
 After submitting the smoke test, this command can be used to see whether the experiment is queued or running:
@@ -523,7 +523,7 @@ A safe starting configuration is `n2-standard-4`, 4 vCPUs, 16 GiB memory, and a 
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-baseline-$(date +%Y%m%d-%H%M%S)" \
-  "python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  "python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --output-root outputs/cloud/dream-baseline" \
   "n2-standard-4" \
   "43200" \
@@ -536,7 +536,7 @@ To collect process-level runtime and memory diagnostics, wrap the experiment com
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-baseline-$(date +%Y%m%d-%H%M%S)" \
-  "/usr/bin/time -v python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  "/usr/bin/time -v python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --output-root outputs/cloud/dream-baseline" \
   "n2-standard-4" \
   "43200" \
@@ -560,22 +560,22 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 
 | Experiment | Command |
 |---|---|
-| Multi-seed baseline | `python -m experiments.kuhn_poker.dream_multiseed_baseline.run --output-root outputs/cloud/dream_multiseed_baseline` |
-| Final-only average-policy training ablation | `python -m experiments.kuhn_poker.dream_final_only_policy_training_ablation.run --output-root outputs/cloud/dream_final_only_policy_training_ablation` |
-| Checkpoint stability | `python -m experiments.kuhn_poker.dream_checkpoint_stability.run --output-root outputs/cloud/dream_checkpoint_stability` |
-| Constrained random search | `python -m experiments.kuhn_poker.dream_constrained_random_search.run --output-root outputs/cloud/dream_constrained_random_search` |
-| Warm-start ablation | `python -m experiments.kuhn_poker.dream_warm_start_ablation.run --output-root outputs/cloud/dream_warm_start_ablation` |
-| Learning-rate schedule ablation | `python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run --output-root outputs/cloud/dream_lr_schedule_ablation` |
-| Baseline-network budget ablation | `python -m experiments.kuhn_poker.dream_baseline_network_budget_ablation.run --output-root outputs/cloud/dream_baseline_network_budget_ablation` |
-| Epsilon-exploration ablation | `python -m experiments.kuhn_poker.dream_epsilon_exploration_ablation.run --output-root outputs/cloud/dream_epsilon_exploration_ablation` |
-| Trajectories-per-iteration ablation | `python -m experiments.kuhn_poker.dream_trajectories_per_iteration_ablation.run --output-root outputs/cloud/dream_trajectories_per_iteration_ablation` |
+| Multi-seed baseline | `python -m experiments.leduc_poker.dream_multiseed_baseline.run --output-root outputs/cloud/dream_multiseed_baseline` |
+| Final-only average-policy training ablation | `python -m experiments.leduc_poker.dream_final_only_policy_training_ablation.run --output-root outputs/cloud/dream_final_only_policy_training_ablation` |
+| Checkpoint stability | `python -m experiments.leduc_poker.dream_checkpoint_stability.run --output-root outputs/cloud/dream_checkpoint_stability` |
+| Constrained random search | `python -m experiments.leduc_poker.dream_constrained_random_search.run --output-root outputs/cloud/dream_constrained_random_search` |
+| Warm-start ablation | `python -m experiments.leduc_poker.dream_warm_start_ablation.run --output-root outputs/cloud/dream_warm_start_ablation` |
+| Learning-rate schedule ablation | `python -m experiments.leduc_poker.dream_lr_schedule_ablation.run --output-root outputs/cloud/dream_lr_schedule_ablation` |
+| Baseline-network budget ablation | `python -m experiments.leduc_poker.dream_baseline_network_budget_ablation.run --output-root outputs/cloud/dream_baseline_network_budget_ablation` |
+| Epsilon-exploration ablation | `python -m experiments.leduc_poker.dream_epsilon_exploration_ablation.run --output-root outputs/cloud/dream_epsilon_exploration_ablation` |
+| Trajectories-per-iteration ablation | `python -m experiments.leduc_poker.dream_trajectories_per_iteration_ablation.run --output-root outputs/cloud/dream_trajectories_per_iteration_ablation` |
 
 Example:
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-lr-schedule-$(date +%Y%m%d-%H%M%S)" \
-  "python -m experiments.kuhn_poker.dream_lr_schedule_ablation.run \
+  "python -m experiments.leduc_poker.dream_lr_schedule_ablation.run \
     --output-root outputs/cloud/dream_lr_schedule_ablation" \
   "n2-standard-4" \
   "43200" \
@@ -608,7 +608,7 @@ The Batch resource request must fit inside the selected machine type. For exampl
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-baseline-small-$(date +%Y%m%d-%H%M%S)" \
-  "python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  "python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --output-root outputs/cloud/dream-baseline-small" \
   "n2-standard-2" \
   "43200" \
@@ -621,7 +621,7 @@ The Batch resource request must fit inside the selected machine type. For exampl
 ```bash
 ./gcp/submit_batch_experiment.sh \
   "dream-baseline-large-$(date +%Y%m%d-%H%M%S)" \
-  "python -m experiments.kuhn_poker.dream_multiseed_baseline.run \
+  "python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --output-root outputs/cloud/dream-baseline-large" \
   "n2-standard-8" \
   "43200" \

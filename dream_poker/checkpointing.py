@@ -23,7 +23,7 @@ except Exception:  # pragma: no cover
     expected_game_score = None
     exploitability = None
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET, KUHN_GAME_VALUE_P0
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET, LEDUC_GAME_VALUE_P0
 from dream_poker.experiment_utils import ensure_dir
 from dream_poker.networks import MLP
 from dream_poker.plotting import (
@@ -35,7 +35,7 @@ from dream_poker.plotting import (
 
 
 CHECKPOINT_PATTERN = re.compile(
-    r"kuhn_poker_dream_seed_(?P<seed>\d+)_policy_snapshot_(?P<iteration>\d+)_iters\.pt$"
+    r"leduc_poker_dream_seed_(?P<seed>\d+)_policy_snapshot_(?P<iteration>\d+)_iters\.pt$"
 )
 
 
@@ -82,7 +82,7 @@ class LoadedDREAMPolicy(osp_policy.Policy if osp_policy is not None else object)
 def save_dream_policy_snapshot(solver, seed: int, checkpoint_iteration: int, output_dir: Path, config: Dict) -> Path:
     """Save a lightweight average-policy snapshot for head-to-head analysis."""
     output_dir = ensure_dir(output_dir)
-    path = output_dir / f"kuhn_poker_dream_seed_{seed}_policy_snapshot_{checkpoint_iteration}_iters.pt"
+    path = output_dir / f"leduc_poker_dream_seed_{seed}_policy_snapshot_{checkpoint_iteration}_iters.pt"
     torch.save(
         {
             "kind": "dream_policy_snapshot",
@@ -113,7 +113,7 @@ def save_optional_full_checkpoint(
     if not config.get("save_full_solver_checkpoints", False):
         return None
     output_dir = ensure_dir(output_dir)
-    path = output_dir / f"kuhn_poker_dream_seed_{seed}_full_ckpt_{checkpoint_iteration}_iters.pt"
+    path = output_dir / f"leduc_poker_dream_seed_{seed}_full_ckpt_{checkpoint_iteration}_iters.pt"
     torch.save(
         {
             "kind": "dream_full_checkpoint",
@@ -205,9 +205,9 @@ def checkpoint_exploitability_metrics(game, policies_by_seed: Dict[str, Dict[int
                     "exploitability": nash_conv / 2.0,
                     "policy_value_player_0": value,
                     "average_policy_value": average_policy_value,
-                    "policy_value_error_from_known_value": abs(value - KUHN_GAME_VALUE_P0),
+                    "policy_value_error_from_known_value": abs(value - LEDUC_GAME_VALUE_P0),
                     "average_policy_value_error_from_target": abs(
-                        average_policy_value - KUHN_AVERAGE_POLICY_VALUE_TARGET
+                        average_policy_value - LEDUC_AVERAGE_POLICY_VALUE_TARGET
                     ),
                 }
             )
@@ -431,7 +431,7 @@ def plot_errorbar(
     title: str,
     output_path: Path,
     zero_line: bool = True,
-    average_policy_value_target: float = KUHN_AVERAGE_POLICY_VALUE_TARGET,
+    average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
     x = df["checkpoint"].to_numpy(dtype=float)

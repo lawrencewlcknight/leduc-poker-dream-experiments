@@ -1,8 +1,8 @@
 
 [project]
-name = "kuhn-poker-dream-experiments"
+name = "leduc-poker-dream-experiments"
 version = "0.1.0"
-description = "DREAM-style Kuhn poker experiments for an MPhil thesis"
+description = "DREAM-style Leduc poker experiments for an MPhil thesis"
 requires-python = ">=3.9,<3.10"
 
 [tool.pytest.ini_options]

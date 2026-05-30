@@ -111,10 +111,10 @@ def test_average_policy_value_curve_has_configurable_target_line():
         "average_policy_value",
         "Average policy value",
         "Average policy value",
-        average_policy_value_target=-0.0556,
+        average_policy_value_target=-0.085606,
     )
 
     target_lines = _average_policy_value_target_lines(ax)
     assert len(target_lines) == 1
-    assert set(target_lines[0].get_ydata()) == {-0.0556}
+    assert set(target_lines[0].get_ydata()) == {-0.085606}
     plt.close(fig)

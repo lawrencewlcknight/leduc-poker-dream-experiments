@@ -1,5 +1,5 @@
 
-"""DREAM-style OpenSpiel solver for Kuhn poker experiments.
+"""DREAM-style OpenSpiel solver for Leduc poker experiments.
 
 This is an OpenSpiel/PyTorch adaptation intended for thesis experiments. It is not a
 bit-for-bit port of the original PokerRL DREAM repository.
@@ -28,7 +28,7 @@ except Exception:  # pragma: no cover - OpenSpiel may not be installed in all en
     expected_game_score = None
     exploitability = None
 
-from dream_poker.constants import KUHN_AVERAGE_POLICY_VALUE_TARGET, KUHN_GAME_VALUE_P0
+from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET, LEDUC_GAME_VALUE_P0
 from dream_poker.experiment_utils import grad_norm, safe_mean, safe_std
 from dream_poker.networks import MLP
 from dream_poker.replay import (
@@ -81,6 +81,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         baseline_network_train_steps: int = 100,
         policy_network_train_every: int = 25,
         compute_exploitability: bool = True,
+        game_value_player_0: Optional[float] = None,
+        average_policy_value_target: Optional[float] = None,
         seed: Optional[int] = None,
     ):
         if policy is not None:
@@ -117,6 +119,14 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._baseline_network_train_steps = int(baseline_network_train_steps)
         self._policy_network_train_every = int(policy_network_train_every)
         self._compute_exploitability = bool(compute_exploitability)
+        self._game_value_player_0 = (
+            float(game_value_player_0) if game_value_player_0 is not None else LEDUC_GAME_VALUE_P0
+        )
+        self._average_policy_value_target = (
+            float(average_policy_value_target)
+            if average_policy_value_target is not None
+            else LEDUC_AVERAGE_POLICY_VALUE_TARGET
+        )
 
         if seed is not None:
             set_seed(seed)
@@ -604,8 +614,10 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "exploitability": expl,
             "policy_value_player_0": policy_value,
             "average_policy_value": average_policy_value,
-            "policy_value_error": abs(policy_value - KUHN_GAME_VALUE_P0),
-            "average_policy_value_error": abs(average_policy_value - KUHN_AVERAGE_POLICY_VALUE_TARGET),
+            "policy_value_error": abs(policy_value - self._game_value_player_0),
+            "average_policy_value_error": abs(
+                average_policy_value - self._average_policy_value_target
+            ),
             "policy_loss": float(self._last_policy_loss),
             "advantage_loss_player_0": float(self._last_advantage_loss[0]),
             "advantage_loss_player_1": float(self._last_advantage_loss[1]),
