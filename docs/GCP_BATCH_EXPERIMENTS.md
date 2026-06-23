@@ -569,6 +569,9 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Baseline-network budget ablation | `python -m experiments.leduc_poker.dream_baseline_network_budget_ablation.run --output-root outputs/cloud/dream_baseline_network_budget_ablation` |
 | Epsilon-exploration ablation | `python -m experiments.leduc_poker.dream_epsilon_exploration_ablation.run --output-root outputs/cloud/dream_epsilon_exploration_ablation` |
 | Trajectories-per-iteration ablation | `python -m experiments.leduc_poker.dream_trajectories_per_iteration_ablation.run --output-root outputs/cloud/dream_trajectories_per_iteration_ablation` |
+| Experiment 10: network-width ablation | `python -m experiments.leduc_poker.dream_network_size_ablation.run --output-root outputs/cloud/dream_network_width_ablation` |
+| Experiment 11: network-depth ablation | `python -m experiments.leduc_poker.dream_network_depth_ablation.run --output-root outputs/cloud/dream_network_depth_ablation` |
+| Experiment 12: capacity-extremes ablation | `python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run --output-root outputs/cloud/dream_network_capacity_extremes_ablation` |
 
 Example:
 
@@ -579,6 +582,38 @@ Example:
     --output-root outputs/cloud/dream_lr_schedule_ablation" \
   "n2-standard-4" \
   "43200" \
+  "4000" \
+  "16000"
+```
+
+The network-size study is split into three independent experiments. Submit each
+module as its own job:
+
+```bash
+./gcp/submit_batch_experiment.sh \
+  "dream-exp10-width-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_size_ablation.run \
+    --output-root outputs/cloud/dream_network_width_ablation" \
+  "n2-standard-4" \
+  "172800" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "dream-exp11-depth-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_depth_ablation.run \
+    --output-root outputs/cloud/dream_network_depth_ablation" \
+  "n2-standard-4" \
+  "172800" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "dream-exp12-capacity-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
+    --output-root outputs/cloud/dream_network_capacity_extremes_ablation" \
+  "n2-standard-4" \
+  "172800" \
   "4000" \
   "16000"
 ```
