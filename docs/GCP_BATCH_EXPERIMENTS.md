@@ -458,6 +458,60 @@ After submitting the smoke test, this command can be used to see whether the exp
 gcloud batch jobs list --location "$REGION"
 ```
 
+To smoke-test the network-architecture experiments without installing the
+repository Python dependencies locally, submit tiny Batch jobs for experiments
+10, 11, and 12:
+
+```bash
+./gcp/submit_batch_experiment.sh \
+  "dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_size_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_width_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_depth_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_depth_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_capacity_extremes_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+```
+
 ---
 
 ## 8. Monitor a Batch job

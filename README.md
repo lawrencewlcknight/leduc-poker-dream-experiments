@@ -249,7 +249,71 @@ python -m experiments.leduc_poker.dream_network_depth_ablation.run
 python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run
 ```
 
-For a quick smoke test of just the network-architecture experiments:
+To run quick smoke tests for the network-architecture experiments on GCP, use
+the Batch submission script. These commands do not require the repository Python
+dependencies to be installed locally; they only require the Google Cloud CLI,
+the GCP environment variables from
+[`docs/GCP_BATCH_EXPERIMENTS.md`](docs/GCP_BATCH_EXPERIMENTS.md), and a local
+`python3` capable of running the submission helper.
+
+```bash
+# Experiment 10 — network-width ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_size_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_width_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Experiment 11 — network-depth ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_depth_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_depth_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Experiment 12 — network-capacity extremes ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --traversals 50 \
+    --policy-network-train-steps 20 \
+    --advantage-network-train-steps 20 \
+    --baseline-network-train-steps 20 \
+    --evaluation-interval 5 \
+    --output-root outputs/cloud/smoke/dream_network_capacity_extremes_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+```
+
+For a quick local smoke test of just the network-architecture experiments:
+
+Run these from an activated environment that has `requirements.txt` installed. If
+you see `ModuleNotFoundError: No module named 'matplotlib'`, the selected
+`python` is not the environment used for this repository.
 
 ```bash
 # Experiment 10 — network-width ablation smoke test
@@ -286,7 +350,7 @@ python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
   --output-root outputs/smoke_tests/dream_network_capacity_extremes_ablation
 ```
 
-For smoke tests across all experiments:
+For local smoke tests across all experiments:
 
 ```bash
 python -m experiments.leduc_poker.dream_multiseed_baseline.run \

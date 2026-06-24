@@ -22,9 +22,16 @@ python -m compileall dream_poker experiments tests
 pytest -q
 ```
 
-## Quick smoke test
+## Local smoke tests
 
 The following commands run deliberately tiny two-seed DREAM experiments. They are intended to check that the runners, outputs, and plotting pipelines work; they are not scientifically meaningful.
+
+Run them from the activated environment created above. If `python` reports
+`ModuleNotFoundError: No module named 'matplotlib'`, the selected interpreter
+does not have `requirements.txt` installed.
+
+For smoke tests that run on GCP instead of the local Python environment, use the
+Batch smoke-test commands in `README.md` or `docs/GCP_BATCH_EXPERIMENTS.md`.
 
 ```bash
 python -m experiments.leduc_poker.dream_multiseed_baseline.run \
