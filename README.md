@@ -249,7 +249,44 @@ python -m experiments.leduc_poker.dream_network_depth_ablation.run
 python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run
 ```
 
-For a quick smoke test:
+For a quick smoke test of just the network-architecture experiments:
+
+```bash
+# Experiment 10 — network-width ablation smoke test
+python -m experiments.leduc_poker.dream_network_size_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_network_width_ablation
+
+# Experiment 11 — network-depth ablation smoke test
+python -m experiments.leduc_poker.dream_network_depth_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_network_depth_ablation
+
+# Experiment 12 — network-capacity extremes ablation smoke test
+python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --evaluation-interval 5 \
+  --output-root outputs/smoke_tests/dream_network_capacity_extremes_ablation
+```
+
+For smoke tests across all experiments:
 
 ```bash
 python -m experiments.leduc_poker.dream_multiseed_baseline.run \
