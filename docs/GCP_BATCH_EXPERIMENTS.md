@@ -261,7 +261,7 @@ else
 fi
 
 $SUDO apt-get update
-$SUDO apt-get install -y git python3.9 python3.9-dev python3.9-venv
+$SUDO apt-get install -y git curl ca-certificates python3.9 python3.9-dev python3.9-venv
 
 WORKDIR=/workspace
 mkdir -p "$WORKDIR"
@@ -274,9 +274,20 @@ export HOME="${{HOME:-/root}}"
 export TMPDIR="/tmp"
 export PIP_CACHE_DIR="/tmp/pip-cache"
 export MPLCONFIGDIR="/tmp/matplotlib-cache"
-export PATH="/usr/local/bin:$PATH"
+export UV_CACHE_DIR="/tmp/uv-cache"
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 
-mkdir -p "$HOME" "$TMPDIR" "$PIP_CACHE_DIR" "$MPLCONFIGDIR"
+mkdir -p "$HOME" "$TMPDIR" "$PIP_CACHE_DIR" "$MPLCONFIGDIR" "$UV_CACHE_DIR"
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# Keep Google Cloud CLI on a runtime it supports. This is separate from the
+# experiment environment below, which remains Python 3.9.
+uv python install 3.10
+export CLOUDSDK_PYTHON="$(uv python find 3.10)"
+echo "Configured Cloud SDK Python:"
+"$CLOUDSDK_PYTHON" --version
 
 echo "Python version:"
 python3.9 --version
@@ -287,7 +298,7 @@ free -h || true
 df -h || true
 lscpu | head -30 || true
 
-# Keep experiment dependencies isolated from the Google Cloud CLI Python runtime.
+# Keep experiment dependencies isolated from the VM Python runtime.
 python3.9 -m venv --copies /tmp/leduc-dream-venv
 source /tmp/leduc-dream-venv/bin/activate
 
@@ -298,12 +309,24 @@ python -m pip check || true
 
 mkdir -p "outputs/cloud/{job_name}"
 
-{experiment_command}
+EXPERIMENT_EXIT=0
+{experiment_command} || EXPERIMENT_EXIT=$?
 
-deactivate
+deactivate || true
 
-echo "Experiment completed. Copying outputs to Cloud Storage."
-gsutil -m cp -r outputs "{bucket}/{job_name}/"
+echo "Experiment command finished. Copying outputs to Cloud Storage."
+UPLOAD_EXIT=0
+gsutil -m cp -r outputs "{bucket}/{job_name}/" || UPLOAD_EXIT=$?
+
+if [ "$EXPERIMENT_EXIT" -ne 0 ]; then
+  echo "Experiment command failed with exit code $EXPERIMENT_EXIT."
+  exit "$EXPERIMENT_EXIT"
+fi
+
+if [ "$UPLOAD_EXIT" -ne 0 ]; then
+  echo "Output upload failed with exit code $UPLOAD_EXIT."
+  exit "$UPLOAD_EXIT"
+fi
 
 echo "Done."
 """
@@ -422,7 +445,8 @@ The script prints the Batch script before submission. Check that:
 
 - it clones `leduc-poker-dream-experiments`;
 - it creates the virtual environment with `python3.9`;
-- the upload line uses `gsutil`, for example:
+- `Configured Cloud SDK Python:` prints Python 3.10;
+- the upload line uses `gsutil`, matching the existing Batch workflow, for example:
 
 ```bash
 gsutil -m cp -r outputs "gs://your-project-id-leduc-poker-dream-results/dream-smoke-baseline-.../"
@@ -504,11 +528,14 @@ gcloud logging read \
 Useful things to look for:
 
 - `Python version:` should print Python 3.9;
+- `Configured Cloud SDK Python:` should print Python 3.10;
 - `Outputs written to` means the experiment runner completed;
-- `Experiment completed. Copying outputs to Cloud Storage.` means the upload step started;
+- `Experiment command finished. Copying outputs to Cloud Storage.` means the upload step started;
+- `Done.` means the upload finished and the Batch script exited successfully;
 - `No space left on device` indicates disk pressure;
 - `Killed`, `exit code 137`, or `Out of memory` usually indicates memory pressure;
 - `maxRunDuration` means the job hit the time limit;
+- a Google Cloud CLI Python traceback usually means `CLOUDSDK_PYTHON` was not set to the Python 3.10 runtime; resubmit with the current `gcp/submit_batch_experiment.sh`;
 - `Invalid machine type` or resource errors usually mean the requested CPU/memory does not fit the selected machine type;
 - `Unable to locate package python3.9` means the Batch VM image does not provide Python 3.9 through `apt`; use a VM image with Python 3.9 available or switch to a pre-built container image.
 

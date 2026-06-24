@@ -72,7 +72,7 @@ else
 fi
 
 $SUDO apt-get update
-$SUDO apt-get install -y git python3.9 python3.9-dev python3.9-venv
+$SUDO apt-get install -y git curl ca-certificates python3.9 python3.9-dev python3.9-venv
 
 WORKDIR=/workspace
 mkdir -p "$WORKDIR"
@@ -85,9 +85,20 @@ export HOME="${{HOME:-/root}}"
 export TMPDIR="/tmp"
 export PIP_CACHE_DIR="/tmp/pip-cache"
 export MPLCONFIGDIR="/tmp/matplotlib-cache"
-export PATH="/usr/local/bin:$PATH"
+export UV_CACHE_DIR="/tmp/uv-cache"
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 
-mkdir -p "$HOME" "$TMPDIR" "$PIP_CACHE_DIR" "$MPLCONFIGDIR"
+mkdir -p "$HOME" "$TMPDIR" "$PIP_CACHE_DIR" "$MPLCONFIGDIR" "$UV_CACHE_DIR"
+
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# Keep Google Cloud CLI on a runtime it supports. This is separate from the
+# experiment environment below, which remains Python 3.9.
+uv python install 3.10
+export CLOUDSDK_PYTHON="$(uv python find 3.10)"
+echo "Configured Cloud SDK Python:"
+"$CLOUDSDK_PYTHON" --version
 
 echo "Python version:"
 python3.9 --version
@@ -98,7 +109,7 @@ free -h || true
 df -h || true
 lscpu | head -30 || true
 
-# Keep experiment dependencies isolated from the Google Cloud CLI Python runtime.
+# Keep experiment dependencies isolated from the VM Python runtime.
 python3.9 -m venv --copies /tmp/leduc-dream-venv
 source /tmp/leduc-dream-venv/bin/activate
 
@@ -109,12 +120,24 @@ python -m pip check || true
 
 mkdir -p "outputs/cloud/{job_name}"
 
-{experiment_command}
+EXPERIMENT_EXIT=0
+{experiment_command} || EXPERIMENT_EXIT=$?
 
-deactivate
+deactivate || true
 
-echo "Experiment completed. Copying outputs to Cloud Storage."
-gsutil -m cp -r outputs "{bucket}/{job_name}/"
+echo "Experiment command finished. Copying outputs to Cloud Storage."
+UPLOAD_EXIT=0
+gsutil -m cp -r outputs "{bucket}/{job_name}/" || UPLOAD_EXIT=$?
+
+if [ "$EXPERIMENT_EXIT" -ne 0 ]; then
+  echo "Experiment command failed with exit code $EXPERIMENT_EXIT."
+  exit "$EXPERIMENT_EXIT"
+fi
+
+if [ "$UPLOAD_EXIT" -ne 0 ]; then
+  echo "Output upload failed with exit code $UPLOAD_EXIT."
+  exit "$UPLOAD_EXIT"
+fi
 
 echo "Done."
 """
