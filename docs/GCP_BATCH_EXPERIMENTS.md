@@ -421,11 +421,11 @@ bash -n gcp/submit_batch_experiment.sh
 
 ## 7. Run a smoke test
 
-Before running a full experiment, submit a small DREAM baseline smoke test:
+Before running a full experiment, submit a small Leduc DREAM baseline smoke test:
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "dream-smoke-baseline-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-smoke-baseline-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_multiseed_baseline.run \
     --seeds 1234 \
     --iterations 10 \
@@ -434,7 +434,7 @@ Before running a full experiment, submit a small DREAM baseline smoke test:
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/dream-smoke-baseline" \
+    --output-root outputs/cloud/leduc_dream_smoke_baseline" \
   "n2-standard-4" \
   "3600" \
   "4000" \
@@ -449,7 +449,7 @@ The script prints the Batch script before submission. Check that:
 - the upload line uses `gsutil`, matching the existing Batch workflow, for example:
 
 ```bash
-gsutil -m cp -r outputs "gs://your-project-id-leduc-poker-dream-results/dream-smoke-baseline-.../"
+gsutil -m cp -r outputs "gs://your-project-id-leduc-poker-dream-results/leduc-dream-smoke-baseline-.../"
 ```
 
 After submitting the smoke test, this command can be used to see whether the experiment is queued or running:
@@ -464,7 +464,7 @@ repository Python dependencies locally, submit tiny Batch jobs for experiments
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_size_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -473,14 +473,14 @@ repository Python dependencies locally, submit tiny Batch jobs for experiments
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_width_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_width_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
   "16000"
 
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_depth_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -489,14 +489,14 @@ repository Python dependencies locally, submit tiny Batch jobs for experiments
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_depth_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_depth_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
   "16000"
 
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -505,7 +505,7 @@ repository Python dependencies locally, submit tiny Batch jobs for experiments
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_capacity_extremes_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_capacity_extremes_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \

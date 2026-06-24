@@ -257,9 +257,9 @@ the GCP environment variables from
 `python3` capable of running the submission helper.
 
 ```bash
-# Experiment 10 — network-width ablation smoke test on GCP
+# Leduc Experiment 10 — network-width ablation smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_size_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -268,15 +268,15 @@ the GCP environment variables from
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_width_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_width_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
   "16000"
 
-# Experiment 11 — network-depth ablation smoke test on GCP
+# Leduc Experiment 11 — network-depth ablation smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp11-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_depth_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -285,15 +285,15 @@ the GCP environment variables from
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_depth_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_depth_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
   "16000"
 
-# Experiment 12 — network-capacity extremes ablation smoke test on GCP
+# Leduc Experiment 12 — network-capacity extremes ablation smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp12-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
     --seeds 1234 \
     --iterations 10 \
@@ -302,7 +302,7 @@ the GCP environment variables from
     --advantage-network-train-steps 20 \
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
-    --output-root outputs/cloud/smoke/dream_network_capacity_extremes_ablation" \
+    --output-root outputs/cloud/smoke/leduc_dream_network_capacity_extremes_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
@@ -316,7 +316,7 @@ you see `ModuleNotFoundError: No module named 'matplotlib'`, the selected
 `python` is not the environment used for this repository.
 
 ```bash
-# Experiment 10 — network-width ablation smoke test
+# Leduc Experiment 10 — network-width ablation smoke test
 python -m experiments.leduc_poker.dream_network_size_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
@@ -327,7 +327,7 @@ python -m experiments.leduc_poker.dream_network_size_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_network_width_ablation
 
-# Experiment 11 — network-depth ablation smoke test
+# Leduc Experiment 11 — network-depth ablation smoke test
 python -m experiments.leduc_poker.dream_network_depth_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
@@ -338,7 +338,7 @@ python -m experiments.leduc_poker.dream_network_depth_ablation.run \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_network_depth_ablation
 
-# Experiment 12 — network-capacity extremes ablation smoke test
+# Leduc Experiment 12 — network-capacity extremes ablation smoke test
 python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
   --seeds 1234,2025 \
   --iterations 10 \
