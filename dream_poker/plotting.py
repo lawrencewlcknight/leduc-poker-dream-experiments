@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
@@ -17,6 +18,58 @@ from dream_poker.experiment_utils import ensure_dir
 NASH_EXPLOITABILITY_TARGET = 0.0
 NASH_EXPLOITABILITY_TARGET_LABEL = "Nash equilibrium target (0)"
 AVERAGE_POLICY_VALUE_TARGET_LABEL = "Average-policy value target"
+
+
+def normalise_algorithm_title(raw: str, fallback: str = "DREAM") -> str:
+    raw = raw.strip()
+    if not raw:
+        return fallback
+    lower = raw.lower()
+    if lower.startswith("deep cfr"):
+        return "Deep CFR"
+    if lower.startswith("escher"):
+        return "ESCHER"
+    if lower.startswith("dream"):
+        return "DREAM"
+    first_token = raw.split()[0]
+    return first_token.split("-")[0].upper()
+
+
+def algorithm_title_from_config(config: Optional[Dict] = None, fallback: str = "DREAM") -> str:
+    if not config:
+        return fallback
+    raw = str(config.get("plot_algorithm") or config.get("algorithm") or fallback).strip()
+    return normalise_algorithm_title(raw, fallback=fallback)
+
+
+def poker_title_from_config(config: Optional[Dict] = None, fallback: str = "Leduc") -> str:
+    if not config:
+        return fallback
+    raw = str(config.get("plot_game") or config.get("game_name") or fallback).strip()
+    if not raw:
+        return fallback
+    raw = raw.removesuffix("_poker").removesuffix(" poker")
+    words = re.split(r"[_\s-]+", raw)
+    return " ".join(word.capitalize() for word in words if word)
+
+
+def plot_title_prefix(config: Optional[Dict] = None, *, algorithm: Optional[str] = None, poker: Optional[str] = None) -> str:
+    algorithm_name = normalise_algorithm_title(algorithm) if algorithm else algorithm_title_from_config(config)
+    poker_name = poker.strip().title() if poker else poker_title_from_config(config)
+    return f"{algorithm_name} - {poker_name}"
+
+
+def format_plot_title(
+    title: str,
+    config: Optional[Dict] = None,
+    *,
+    algorithm: Optional[str] = None,
+    poker: Optional[str] = None,
+) -> str:
+    prefix = plot_title_prefix(config, algorithm=algorithm, poker=poker)
+    if title.startswith(f"{prefix} - "):
+        return title
+    return f"{prefix} - {title}"
 
 
 def is_exploitability_metric(metric: str) -> bool:
@@ -67,6 +120,7 @@ def plot_mean_curve(
     output_path: Optional[Path] = None,
     equilibrium_line: Optional[float] = None,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ):
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for seed, seed_df in curves_df.groupby("seed"):
@@ -85,7 +139,7 @@ def plot_mean_curve(
         add_average_policy_value_target(ax, target=average_policy_value_target)
     elif equilibrium_line is not None:
         ax.axhline(equilibrium_line, linestyle="--", linewidth=1.1, label="Target")
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -103,6 +157,7 @@ def plot_summary_bar(
     ylabel: str,
     output_path: Optional[Path] = None,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ):
     fig, ax = plt.subplots(figsize=(6.8, 4.6))
     mean = summary_df[metric].mean()
@@ -114,7 +169,7 @@ def plot_summary_bar(
     elif is_average_policy_value_metric(metric):
         add_average_policy_value_target(ax, target=average_policy_value_target)
         ax.legend()
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
@@ -129,6 +184,7 @@ def plot_summary_bars(
     title: str,
     output_path: Optional[Path] = None,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ):
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
     labels = [metric.replace("_", " ").title() for metric in metrics]
@@ -141,7 +197,7 @@ def plot_summary_bars(
     elif all(is_average_policy_value_metric(metric) for metric in metrics):
         add_average_policy_value_target(ax, target=average_policy_value_target)
         ax.legend()
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.grid(True, axis="y", alpha=0.3)
     ax.tick_params(axis="x", rotation=20)
     fig.tight_layout()
@@ -164,6 +220,7 @@ def plot_metric_bar_by_variant(
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ):
     order = ordered_variants(summary_df, variant_order)
     labels = [variant_labels.get(v, v) for v in order]
@@ -177,7 +234,7 @@ def plot_metric_bar_by_variant(
     elif is_average_policy_value_metric(metric):
         add_average_policy_value_target(ax, target=average_policy_value_target)
         ax.legend()
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)
     ax.tick_params(axis="x", rotation=20)
@@ -197,6 +254,7 @@ def plot_curve_by_variant(
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ):
     fig, ax = plt.subplots(figsize=(9.0, 5.2))
     for variant in ordered_variants(curves_df, variant_order):
@@ -224,7 +282,7 @@ def plot_curve_by_variant(
         add_nash_exploitability_target(ax)
     elif is_average_policy_value_metric(y_col):
         add_average_policy_value_target(ax, target=average_policy_value_target)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -243,6 +301,7 @@ def plot_paired_delta_bar(
     variant_order: Sequence[str],
     variant_labels: Dict[str, str],
     output_path: Optional[Path] = None,
+    title_config: Optional[Dict] = None,
 ):
     delta_col = f"delta_{metric}"
     order = ordered_variants(paired_df, variant_order)
@@ -252,7 +311,7 @@ def plot_paired_delta_bar(
     fig, ax = plt.subplots(figsize=(8.0, 4.8))
     ax.axhline(0.0, linewidth=1.0, linestyle="--")
     ax.bar(labels, means, yerr=ses, capsize=6)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)
     ax.tick_params(axis="x", rotation=20)
@@ -262,7 +321,12 @@ def plot_paired_delta_bar(
     return fig, ax
 
 
-def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Path) -> None:
+def create_thesis_plots(
+    curves_df: pd.DataFrame,
+    summary_df: pd.DataFrame,
+    output_dir: Path,
+    title_config: Optional[Dict] = None,
+) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
     plot_mean_curve(
         curves_df,
@@ -271,6 +335,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Exploitability by Iteration",
         "Exploitability",
         plot_dir / "dream_exploitability_by_iteration.png",
+        title_config=title_config,
     )
     plot_mean_curve(
         curves_df,
@@ -279,6 +344,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Exploitability by Nodes Touched",
         "Exploitability",
         plot_dir / "dream_exploitability_by_nodes.png",
+        title_config=title_config,
     )
     plot_mean_curve(
         curves_df,
@@ -287,6 +353,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Policy-Value Error",
         "Absolute error from Leduc game value",
         plot_dir / "dream_policy_value_error.png",
+        title_config=title_config,
     )
     plot_mean_curve(
         curves_df,
@@ -295,6 +362,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Average-Policy Loss Diagnostic",
         "Policy loss",
         plot_dir / "dream_policy_loss.png",
+        title_config=title_config,
     )
     plot_mean_curve(
         curves_df,
@@ -303,6 +371,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Advantage-Target Variance Diagnostic",
         "Target variance",
         plot_dir / "dream_advantage_target_variance.png",
+        title_config=title_config,
     )
     plot_mean_curve(
         curves_df,
@@ -311,6 +380,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Baseline-Replay Reward Variance Diagnostic",
         "Reward variance",
         plot_dir / "dream_baseline_replay_variance.png",
+        title_config=title_config,
     )
     plot_summary_bar(
         summary_df,
@@ -318,6 +388,7 @@ def create_thesis_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, outpu
         "DREAM Baseline: Final Exploitability",
         "Final exploitability",
         plot_dir / "dream_final_exploitability.png",
+        title_config=title_config,
     )
 
 # After running the experiment, call:

@@ -132,6 +132,7 @@ def run_experiment(
             ("strategy_buffer_size", "Strategy-Memory Size", "Strategy-memory entries"),
         ],
         average_policy_value_target=average_policy_value_target(config),
+        title_config=config,
     )
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir

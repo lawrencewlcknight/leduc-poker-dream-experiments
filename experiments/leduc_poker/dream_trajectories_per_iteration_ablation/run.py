@@ -186,6 +186,7 @@ def make_plots(
             ("strategy_buffer_size", "Strategy-Memory Size", "Strategy-memory entries"),
         ],
         average_policy_value_target=value_target,
+        title_config=config,
     )
 
     plot_dir = ensure_dir(output_dir / "plots")
@@ -200,6 +201,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_exploitability_by_sampled_trajectories.png",
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -211,6 +213,7 @@ def make_plots(
         variant_labels,
         plot_dir / f"{plot_prefix}_average_policy_value_by_sampled_trajectories.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -221,6 +224,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_policy_value_error_by_sampled_trajectories.png",
+        title_config=config,
     )
     if len(paired_df):
         plot_paired_delta_bar(
@@ -231,6 +235,7 @@ def make_plots(
             variant_order,
             variant_labels,
             plot_dir / f"{plot_prefix}_paired_sample_trajectory_auc_delta.png",
+            title_config=config,
         )
 
 

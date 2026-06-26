@@ -231,6 +231,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "DREAM checkpoint exploitability over training",
         "Exploitability",
         plot_dir / "checkpoint_exploitability_by_iteration.png",
+        title_config=config,
     )
     plot_mean_curve(
         curves_df,
@@ -239,6 +240,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "DREAM checkpoint exploitability by nodes touched",
         "Exploitability",
         plot_dir / "checkpoint_exploitability_by_nodes.png",
+        title_config=config,
     )
     plot_mean_curve(
         curves_df,
@@ -248,6 +250,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "Average policy value",
         plot_dir / "checkpoint_average_policy_value_by_iteration.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_mean_curve(
         curves_df,
@@ -257,6 +260,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "Average policy value",
         plot_dir / "checkpoint_average_policy_value_by_nodes.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_mean_curve(
         curves_df,
@@ -265,6 +269,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "DREAM checkpoint policy-value error",
         "Absolute error from Leduc game value",
         plot_dir / "checkpoint_policy_value_error.png",
+        title_config=config,
     )
     plot_mean_curve(
         curves_df,
@@ -273,6 +278,7 @@ def make_training_plots(curves_df: pd.DataFrame, output_dir: Path, config: Dict)
         "DREAM average-policy training loss at checkpoints",
         "Policy loss",
         plot_dir / "checkpoint_policy_loss.png",
+        title_config=config,
     )
 
 
@@ -326,6 +332,7 @@ def run_analysis_stage(config: Dict, checkpoint_dir: Path, output_dir: Optional[
         aggregate_strength_df,
         plot_dir,
         average_policy_value_target(config),
+        config,
     )
     write_json(
         analysis_dir / "head_to_head_analysis_metadata.json",
@@ -361,11 +368,13 @@ def make_head_to_head_plots(
     aggregate_strength_df: pd.DataFrame,
     plot_dir: Path,
     average_policy_value_target_value: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    config: Optional[Dict] = None,
 ) -> None:
     plot_heatmap(
         mean_matrix,
         "DREAM mean exact head-to-head EV across seeds",
         plot_dir / "dream_head_to_head_exact_mean_matrix.png",
+        title_config=config,
     )
     later_vs_earlier = mean_matrix.copy()
     for i, row_checkpoint in enumerate(later_vs_earlier.index):
@@ -376,6 +385,7 @@ def make_head_to_head_plots(
         later_vs_earlier,
         "DREAM later-vs-earlier checkpoint EV",
         plot_dir / "dream_later_vs_earlier_mean_matrix.png",
+        title_config=config,
     )
     plot_heatmap(
         win_fraction_matrix,
@@ -386,6 +396,7 @@ def make_head_to_head_plots(
         vmax=1.0,
         fmt=".2f",
         colorbar_label="Seed win fraction",
+        title_config=config,
     )
     plot_errorbar(
         aggregate_strength_df,
@@ -394,6 +405,7 @@ def make_head_to_head_plots(
         "Mean EV vs earlier checkpoints",
         "DREAM: does later training improve head-to-head performance?",
         plot_dir / "dream_head_to_head_strength_vs_earlier_aggregate.png",
+        title_config=config,
     )
     plot_errorbar(
         aggregate_strength_df,
@@ -402,6 +414,7 @@ def make_head_to_head_plots(
         "EV vs immediately previous checkpoint",
         "DREAM adjacent-checkpoint improvement",
         plot_dir / "dream_head_to_head_vs_previous_checkpoint_aggregate.png",
+        title_config=config,
     )
     plot_errorbar(
         aggregate_strength_df,
@@ -411,6 +424,7 @@ def make_head_to_head_plots(
         "DREAM checkpoint exploitability",
         plot_dir / "dream_checkpoint_exploitability_aggregate.png",
         zero_line=False,
+        title_config=config,
     )
     plot_errorbar(
         aggregate_strength_df,
@@ -421,6 +435,7 @@ def make_head_to_head_plots(
         plot_dir / "dream_checkpoint_average_policy_value_aggregate.png",
         zero_line=False,
         average_policy_value_target=average_policy_value_target_value,
+        title_config=config,
     )
     plot_errorbar(
         aggregate_strength_df,
@@ -430,6 +445,7 @@ def make_head_to_head_plots(
         "DREAM checkpoint policy-value error",
         plot_dir / "dream_checkpoint_policy_value_error_aggregate.png",
         zero_line=False,
+        title_config=config,
     )
 
 

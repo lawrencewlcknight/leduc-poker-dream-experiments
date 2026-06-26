@@ -19,7 +19,7 @@ from dream_poker.experiment_runner import (
     write_json,
 )
 from dream_poker.experiment_utils import average_policy_value_target, cleanup_training_memory, ensure_dir
-from dream_poker.plotting import plot_curve_by_variant
+from dream_poker.plotting import format_plot_title, plot_curve_by_variant
 from dream_poker.variant_ablation import (
     add_variant_curve_columns,
     aggregate_variant_summary,
@@ -188,6 +188,7 @@ def plot_capacity_metric(
     title: str,
     ylabel: str,
     output_path: Path,
+    title_config: Dict | None = None,
 ) -> None:
     grouped = (
         summary_df.groupby(["variant", "variant_label", "total_network_parameters"], sort=False)[metric]
@@ -211,7 +212,7 @@ def plot_capacity_metric(
             fontsize=8,
         )
     ax.set_xscale("log")
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel("Total trainable parameters across DREAM networks")
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -245,6 +246,7 @@ def make_plots(
             ("policy_entropy_mean", "Policy Entropy", "Mean policy entropy"),
         ],
         average_policy_value_target=value_target,
+        title_config=config,
     )
 
     plot_dir = ensure_dir(output_dir / "plots")
@@ -259,6 +261,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_policy_loss_by_nodes.png",
+        title_config=config,
     )
     plot_capacity_metric(
         summary_df,
@@ -266,6 +269,7 @@ def make_plots(
         f"{title_prefix}: Final Exploitability by Parameter Count",
         "Final exploitability",
         plot_dir / f"{plot_prefix}_final_exploitability_by_parameters.png",
+        title_config=config,
     )
     plot_capacity_metric(
         summary_df,
@@ -273,6 +277,7 @@ def make_plots(
         f"{title_prefix}: Node-Efficiency AUC by Parameter Count",
         "Exploitability AUC by nodes",
         plot_dir / f"{plot_prefix}_node_auc_by_parameters.png",
+        title_config=config,
     )
 
 

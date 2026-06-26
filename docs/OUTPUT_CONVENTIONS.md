@@ -11,6 +11,8 @@ Each experiment should export:
 - `aggregate_summary.json` — aggregate mean and standard-error metrics;
 - thesis-style `.png` plots with names that match the equivalent Deep CFR and ESCHER experiments where possible.
 
+Plot titles should start with the algorithm and poker variant in the form `ALGORITHM - Game - Existing title`, for example `DREAM - Leduc - Final Exploitability` or `ESCHER - Kuhn - Exploitability by Iteration`. Use the shared plotting helpers in `dream_poker.plotting` so the prefix is derived from experiment metadata (`algorithm`, `plot_algorithm`, `game_name`, or `plot_game`) and applied consistently. If no metadata is supplied, the Leduc DREAM repository default is `DREAM - Leduc`.
+
 Variant or ablation experiments may use variant-specific filenames while preserving the same metric columns:
 
 - `checkpoint_curves_by_variant.csv` — per-seed, per-variant, per-checkpoint metrics;

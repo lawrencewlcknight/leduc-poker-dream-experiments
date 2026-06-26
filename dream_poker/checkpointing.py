@@ -29,6 +29,7 @@ from dream_poker.networks import MLP
 from dream_poker.plotting import (
     add_average_policy_value_target,
     add_nash_exploitability_target,
+    format_plot_title,
     is_average_policy_value_metric,
     is_exploitability_metric,
 )
@@ -402,6 +403,7 @@ def plot_heatmap(
     vmax: Optional[float] = None,
     fmt: str = ".3f",
     colorbar_label: str = "Seat-averaged EV for checkpoint A",
+    title_config: Optional[Dict] = None,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 7))
     data = matrix.to_numpy(dtype=float)
@@ -412,7 +414,7 @@ def plot_heatmap(
     ax.set_yticklabels([str(x) for x in matrix.index])
     ax.set_xlabel("Checkpoint B")
     ax.set_ylabel("Checkpoint A")
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
             if np.isfinite(data[i, j]):
@@ -432,6 +434,7 @@ def plot_errorbar(
     output_path: Path,
     zero_line: bool = True,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
     x = df["checkpoint"].to_numpy(dtype=float)
@@ -448,7 +451,7 @@ def plot_errorbar(
         ax.axhline(0.0, linestyle="--", linewidth=1)
     ax.set_xlabel("Checkpoint iteration")
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, dpi=200, bbox_inches="tight")

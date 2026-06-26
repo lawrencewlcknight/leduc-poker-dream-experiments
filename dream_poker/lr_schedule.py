@@ -22,6 +22,7 @@ from dream_poker.experiment_utils import (
 from dream_poker.plotting import (
     add_average_policy_value_target,
     add_nash_exploitability_target,
+    format_plot_title,
     is_average_policy_value_metric,
     is_exploitability_metric,
 )
@@ -180,6 +181,7 @@ def create_lr_schedule_plots(
         "DREAM learning-rate schedule ablation: exploitability by iteration",
         "Exploitability",
         plots_dir / "dream_lr_schedule_exploitability_by_iteration.png",
+        title_config=config,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -188,6 +190,7 @@ def create_lr_schedule_plots(
         "DREAM learning-rate schedule ablation: exploitability by nodes touched",
         "Exploitability",
         plots_dir / "dream_lr_schedule_exploitability_by_nodes.png",
+        title_config=config,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -197,6 +200,7 @@ def create_lr_schedule_plots(
         "Average policy value",
         plots_dir / "dream_lr_schedule_average_policy_value_by_iteration.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -206,6 +210,7 @@ def create_lr_schedule_plots(
         "Average policy value",
         plots_dir / "dream_lr_schedule_average_policy_value_by_nodes.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -214,6 +219,7 @@ def create_lr_schedule_plots(
         "DREAM learning-rate schedule ablation: policy-value error",
         "Absolute error from Leduc game value",
         plots_dir / "dream_lr_schedule_policy_value_error.png",
+        title_config=config,
     )
     plot_variant_mean_curve(
         curves_df,
@@ -222,6 +228,7 @@ def create_lr_schedule_plots(
         "DREAM learning-rate schedule ablation: policy loss diagnostic",
         "Policy loss",
         plots_dir / "dream_lr_schedule_policy_loss.png",
+        title_config=config,
     )
     if "baseline_loss_player_0" in curves_df.columns:
         plot_variant_mean_curve(
@@ -231,6 +238,7 @@ def create_lr_schedule_plots(
             "DREAM learning-rate schedule ablation: baseline-network loss diagnostic",
             "Baseline loss, player 0",
             plots_dir / "dream_lr_schedule_baseline_loss_player_0.png",
+            title_config=config,
         )
     if "advantage_target_variance" in curves_df.columns:
         plot_variant_mean_curve(
@@ -240,6 +248,7 @@ def create_lr_schedule_plots(
             "DREAM learning-rate schedule ablation: advantage-target variance",
             "Advantage-target variance",
             plots_dir / "dream_lr_schedule_advantage_target_variance.png",
+            title_config=config,
         )
     plot_final_metric_bar(
         summary_df,
@@ -247,6 +256,7 @@ def create_lr_schedule_plots(
         "Final exploitability by learning-rate schedule",
         "Final exploitability",
         plots_dir / "dream_lr_schedule_final_exploitability.png",
+        title_config=config,
     )
     plot_final_metric_bar(
         summary_df,
@@ -255,6 +265,7 @@ def create_lr_schedule_plots(
         "Final average policy value",
         plots_dir / "dream_lr_schedule_final_average_policy_value.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_final_metric_bar(
         summary_df,
@@ -262,6 +273,7 @@ def create_lr_schedule_plots(
         "Exploitability AUC by learning-rate schedule",
         "Normalised AUC",
         plots_dir / "dream_lr_schedule_exploitability_auc.png",
+        title_config=config,
     )
     if not paired_df.empty:
         plot_paired_delta(
@@ -270,6 +282,7 @@ def create_lr_schedule_plots(
             "Paired final-exploitability difference versus constant baseline",
             "Delta exploitability",
             plots_dir / "dream_lr_schedule_paired_final_exploitability_delta.png",
+            title_config=config,
         )
         plot_paired_delta(
             paired_df,
@@ -277,6 +290,7 @@ def create_lr_schedule_plots(
             "Paired final average-policy-value difference versus constant baseline",
             "Delta average policy value",
             plots_dir / "dream_lr_schedule_paired_final_average_policy_value_delta.png",
+            title_config=config,
         )
         plot_paired_delta(
             paired_df,
@@ -284,6 +298,7 @@ def create_lr_schedule_plots(
             "Paired exploitability-AUC difference versus constant baseline",
             "Delta normalised AUC",
             plots_dir / "dream_lr_schedule_paired_exploitability_auc_delta.png",
+            title_config=config,
         )
     plot_learning_rate_schedules(
         config=config,
@@ -300,6 +315,7 @@ def plot_variant_mean_curve(
     ylabel: str,
     output_path: Path,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for variant, variant_df in curves_df.groupby("variant"):
@@ -317,7 +333,7 @@ def plot_variant_mean_curve(
         add_nash_exploitability_target(ax)
     elif is_average_policy_value_metric(y_col):
         add_average_policy_value_target(ax, target=average_policy_value_target)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -334,6 +350,7 @@ def plot_final_metric_bar(
     ylabel: str,
     output_path: Path,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> None:
     grouped = summary_df.groupby("variant")[metric]
     means = grouped.mean()
@@ -350,7 +367,7 @@ def plot_final_metric_bar(
     ax.set_xticks(positions)
     ax.set_xticklabels(means.index.tolist(), rotation=20, ha="right")
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, dpi=220, bbox_inches="tight")
@@ -363,6 +380,7 @@ def plot_paired_delta(
     title: str,
     ylabel: str,
     output_path: Path,
+    title_config: Dict | None = None,
 ) -> None:
     delta_col = f"delta_{metric}"
     fig, ax = plt.subplots(figsize=(7.8, 4.8))
@@ -375,7 +393,7 @@ def plot_paired_delta(
     ax.set_xticks(positions)
     ax.set_xticklabels(means.index.tolist(), rotation=20, ha="right")
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.grid(True, axis="y", alpha=0.3)
     fig.tight_layout()
     fig.savefig(output_path, dpi=220, bbox_inches="tight")
@@ -397,7 +415,7 @@ def plot_learning_rate_schedules(config: Dict, schedule_configs: Sequence[Dict],
             for iteration in iterations
         ]
         ax.plot(iterations, values, linewidth=2.2, label=schedule["variant"])
-    ax.set_title("Learning-rate schedules")
+    ax.set_title(format_plot_title("Learning-rate schedules", config))
     ax.set_xlabel("Iteration")
     ax.set_ylabel("Learning rate")
     ax.grid(True, alpha=0.3)

@@ -21,6 +21,7 @@ from dream_poker.experiment_utils import (
 from dream_poker.plotting import (
     add_average_policy_value_target,
     add_nash_exploitability_target,
+    format_plot_title,
     is_average_policy_value_metric,
     is_exploitability_metric,
 )
@@ -139,6 +140,7 @@ def create_warm_start_plots(
         "Exploitability",
         "DREAM Warm-Start Ablation: Exploitability by Iteration",
         plot_dir / "dream_warm_start_exploitability_by_iteration.png",
+        title_config=config,
     )
     plot_arm_curves(
         curves_df,
@@ -147,6 +149,7 @@ def create_warm_start_plots(
         "DREAM Warm-Start Ablation: Exploitability by Nodes Touched",
         plot_dir / "dream_warm_start_exploitability_by_nodes.png",
         x_col="nodes_touched",
+        title_config=config,
     )
     plot_arm_curves(
         curves_df,
@@ -155,6 +158,7 @@ def create_warm_start_plots(
         "DREAM Warm-Start Ablation: Average Policy Value by Iteration",
         plot_dir / "dream_warm_start_average_policy_value_by_iteration.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_arm_curves(
         curves_df,
@@ -164,6 +168,7 @@ def create_warm_start_plots(
         plot_dir / "dream_warm_start_average_policy_value_by_nodes.png",
         x_col="nodes_touched",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_arm_curves(
         curves_df,
@@ -171,6 +176,7 @@ def create_warm_start_plots(
         "Absolute error from Leduc game value",
         "DREAM Warm-Start Ablation: Policy-Value Error",
         plot_dir / "dream_warm_start_policy_value_error.png",
+        title_config=config,
     )
     if "advantage_target_variance" in curves_df.columns:
         plot_arm_curves(
@@ -179,6 +185,7 @@ def create_warm_start_plots(
             "Target variance",
             "DREAM Warm-Start Ablation: Advantage-Target Variance",
             plot_dir / "dream_warm_start_advantage_target_variance.png",
+            title_config=config,
         )
     if "baseline_loss_player_0" in curves_df.columns:
         plot_arm_curves(
@@ -187,6 +194,7 @@ def create_warm_start_plots(
             "Baseline loss",
             "DREAM Warm-Start Ablation: Baseline-Network Loss Diagnostic",
             plot_dir / "dream_warm_start_baseline_loss_player_0.png",
+            title_config=config,
         )
     plot_summary_by_arm(
         summary_df,
@@ -194,6 +202,7 @@ def create_warm_start_plots(
         "Final exploitability",
         "DREAM Warm-Start Ablation: Final Exploitability",
         plot_dir / "dream_warm_start_final_exploitability.png",
+        title_config=config,
     )
     plot_summary_by_arm(
         summary_df,
@@ -202,6 +211,7 @@ def create_warm_start_plots(
         "DREAM Warm-Start Ablation: Final Average Policy Value",
         plot_dir / "dream_warm_start_final_average_policy_value.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_summary_by_arm(
         summary_df,
@@ -209,6 +219,7 @@ def create_warm_start_plots(
         "Final policy-value error",
         "DREAM Warm-Start Ablation: Final Policy-Value Error",
         plot_dir / "dream_warm_start_final_policy_value_error.png",
+        title_config=config,
     )
     plot_paired_deltas(
         paired_df,
@@ -216,6 +227,7 @@ def create_warm_start_plots(
         "Warm-start minus baseline",
         "DREAM Warm-Start Ablation: Paired Final Exploitability Difference",
         plot_dir / "dream_warm_start_paired_final_exploitability_delta.png",
+        title_config=config,
     )
     plot_paired_deltas(
         paired_df,
@@ -223,6 +235,7 @@ def create_warm_start_plots(
         "Warm-start minus baseline",
         "DREAM Warm-Start Ablation: Paired Final Average Policy Value Difference",
         plot_dir / "dream_warm_start_paired_final_average_policy_value_delta.png",
+        title_config=config,
     )
     plot_paired_deltas(
         paired_df,
@@ -230,6 +243,7 @@ def create_warm_start_plots(
         "Warm-start minus baseline",
         "DREAM Warm-Start Ablation: Paired Final-Window Exploitability Difference",
         plot_dir / "dream_warm_start_paired_final_window_delta.png",
+        title_config=config,
     )
 
 
@@ -242,6 +256,7 @@ def plot_arm_curves(
     *,
     x_col: str = "iteration",
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
     for arm in WARM_START_ARMS:
@@ -262,7 +277,7 @@ def plot_arm_curves(
         add_nash_exploitability_target(ax)
     elif is_average_policy_value_metric(metric):
         add_average_policy_value_target(ax, target=average_policy_value_target)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -279,6 +294,7 @@ def plot_summary_by_arm(
     title: str,
     output_path: Path,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Optional[Dict] = None,
 ) -> None:
     grouped = summary_df.groupby("arm")[metric]
     means = [grouped.mean().get(arm, np.nan) for arm in WARM_START_ARMS]
@@ -291,7 +307,7 @@ def plot_summary_by_arm(
     elif is_average_policy_value_metric(metric):
         add_average_policy_value_target(ax, target=average_policy_value_target)
         ax.legend()
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_ylabel(ylabel)
     ax.tick_params(axis="x", rotation=15)
     ax.grid(True, axis="y", alpha=0.3)
@@ -306,6 +322,7 @@ def plot_paired_deltas(
     ylabel: str,
     title: str,
     output_path: Path,
+    title_config: Optional[Dict] = None,
 ) -> None:
     col = f"delta_{metric}_warm_minus_baseline"
     fig, ax = plt.subplots(figsize=(7.0, 4.8))
@@ -315,7 +332,7 @@ def plot_paired_deltas(
     ax.bar(x, y)
     ax.set_xticks(x)
     ax.set_xticklabels([str(s) for s in paired_df["seed"]], rotation=45)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel("Seed")
     ax.set_ylabel(ylabel)
     ax.grid(True, axis="y", alpha=0.3)

@@ -160,52 +160,61 @@ def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Pa
         curves_df, "iteration", "exploitability",
         "DREAM baseline exploitability by iteration", "Exploitability",
         output_dir / "exploitability_by_iteration_multiseed.png",
+        title_config=config,
     )
     plot_mean_curve(
         curves_df, "nodes_touched", "exploitability",
         "DREAM baseline exploitability by nodes touched", "Exploitability",
         output_dir / "exploitability_by_nodes_multiseed.png",
+        title_config=config,
     )
     plot_mean_curve(
         curves_df, "iteration", "average_policy_value",
         "DREAM baseline average policy value by iteration", "Average policy value",
         output_dir / "average_policy_value_by_iteration_multiseed.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_mean_curve(
         curves_df, "nodes_touched", "average_policy_value",
         "DREAM baseline average policy value by nodes touched", "Average policy value",
         output_dir / "average_policy_value_by_nodes_multiseed.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_mean_curve(
         curves_df, "iteration", "policy_value_error",
         "DREAM baseline policy-value error", "Absolute error from known value",
         output_dir / "policy_value_error_multiseed.png",
+        title_config=config,
     )
     if "policy_loss" in curves_df.columns:
         plot_mean_curve(
             curves_df, "iteration", "policy_loss",
             "DREAM policy-network loss diagnostic", "Policy loss",
             output_dir / "policy_loss_diagnostic.png",
+            title_config=config,
         )
     if "advantage_target_variance" in curves_df.columns:
         plot_mean_curve(
             curves_df, "iteration", "advantage_target_variance",
             "DREAM advantage-target variance diagnostic", "Target variance",
             output_dir / "advantage_target_variance_diagnostic.png",
+            title_config=config,
         )
     if "baseline_reward_variance_sampled" in curves_df.columns:
         plot_mean_curve(
             curves_df, "iteration", "baseline_reward_variance_sampled",
             "DREAM baseline-replay reward variance diagnostic", "Reward variance",
             output_dir / "baseline_reward_variance_diagnostic.png",
+            title_config=config,
         )
     plot_summary_bars(
         summary_df,
         ["final_exploitability", "best_exploitability", "final_window_mean_exploitability"],
         "DREAM baseline summary metrics",
         output_dir / "summary_metrics.png",
+        title_config=config,
     )
     plot_summary_bars(
         summary_df,
@@ -213,6 +222,7 @@ def make_plots(curves_df: pd.DataFrame, summary_df: pd.DataFrame, output_dir: Pa
         "DREAM baseline average policy value summary",
         output_dir / "average_policy_value_summary_metrics.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
 
 

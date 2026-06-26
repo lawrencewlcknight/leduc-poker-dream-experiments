@@ -98,6 +98,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_final_exploitability.png",
+        title_config=config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -108,6 +109,7 @@ def make_plots(
         variant_labels,
         plot_dir / "dream_policy_training_final_average_policy_value.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -117,6 +119,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_final_value_error.png",
+        title_config=config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -126,6 +129,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_gradient_budget.png",
+        title_config=config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -135,6 +139,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_runtime.png",
+        title_config=config,
     )
     if len(paired_df):
         plot_paired_delta_bar(
@@ -145,6 +150,7 @@ def make_plots(
             variant_order,
             variant_labels,
             plot_dir / "dream_policy_training_paired_delta_exploitability.png",
+            title_config=config,
         )
         plot_paired_delta_bar(
             paired_df,
@@ -154,6 +160,7 @@ def make_plots(
             variant_order,
             variant_labels,
             plot_dir / "dream_policy_training_paired_delta_average_policy_value.png",
+            title_config=config,
         )
         plot_paired_delta_bar(
             paired_df,
@@ -163,6 +170,7 @@ def make_plots(
             variant_order,
             variant_labels,
             plot_dir / "dream_policy_training_paired_delta_value_error.png",
+            title_config=config,
         )
     plot_curve_by_variant(
         curves_df,
@@ -173,6 +181,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_exploitability_by_iteration.png",
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -183,6 +192,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_exploitability_by_nodes.png",
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -194,6 +204,7 @@ def make_plots(
         variant_labels,
         plot_dir / "dream_policy_training_average_policy_value_by_iteration.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -205,6 +216,7 @@ def make_plots(
         variant_labels,
         plot_dir / "dream_policy_training_average_policy_value_by_nodes.png",
         average_policy_value_target=value_target,
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -215,6 +227,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_policy_loss.png",
+        title_config=config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -225,6 +238,7 @@ def make_plots(
         variant_order,
         variant_labels,
         plot_dir / "dream_policy_training_entropy.png",
+        title_config=config,
     )
 
 

@@ -122,6 +122,7 @@ def run_experiment(
         plot_prefix="dream_baseline_budget",
         title_prefix="DREAM Baseline-Network Budget Ablation",
         average_policy_value_target=average_policy_value_target(config),
+        title_config=config,
     )
     print(f"Outputs written to {output_dir}")
     return curves_df, summary_df, paired_df, output_dir

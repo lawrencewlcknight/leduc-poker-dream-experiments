@@ -29,6 +29,7 @@ from dream_poker.experiment_utils import ensure_average_policy_value_columns
 from dream_poker.plotting import (
     add_average_policy_value_target,
     add_nash_exploitability_target,
+    format_plot_title,
     is_average_policy_value_metric,
     is_exploitability_metric,
 )
@@ -341,6 +342,7 @@ def make_tuning_plots(
     confirmation_curves: pd.DataFrame,
     confirmation_agg: pd.DataFrame,
     average_policy_value_target_value: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> List[Path]:
     plot_dir = ensure_dir(run_dir / "plots")
     table_dir = ensure_dir(run_dir / "tables")
@@ -355,6 +357,7 @@ def make_tuning_plots(
                 "DREAM random search screening: final-window exploitability",
                 "Mean final-window exploitability",
                 plot_dir / "screening_ranked_final_window_exploitability.png",
+                title_config=title_config,
             )
         )
         if "final_window_mean_average_policy_value_mean" in screening_agg.columns:
@@ -367,6 +370,7 @@ def make_tuning_plots(
                     "Mean final-window average policy value",
                     plot_dir / "screening_ranked_final_window_average_policy_value.png",
                     average_policy_value_target=average_policy_value_target_value,
+                    title_config=title_config,
                 )
             )
 
@@ -379,6 +383,7 @@ def make_tuning_plots(
                 "DREAM random search confirmation: final exploitability",
                 "Mean final exploitability",
                 plot_dir / "confirmation_final_exploitability.png",
+                title_config=title_config,
             )
         )
         paths.append(
@@ -389,6 +394,7 @@ def make_tuning_plots(
                 "DREAM random search confirmation: final-window exploitability",
                 "Mean final-window exploitability",
                 plot_dir / "confirmation_final_window_exploitability.png",
+                title_config=title_config,
             )
         )
         if "final_average_policy_value_mean" in confirmation_agg.columns:
@@ -401,6 +407,7 @@ def make_tuning_plots(
                     "Mean final average policy value",
                     plot_dir / "confirmation_final_average_policy_value.png",
                     average_policy_value_target=average_policy_value_target_value,
+                    title_config=title_config,
                 )
             )
         if "final_window_mean_average_policy_value_mean" in confirmation_agg.columns:
@@ -413,6 +420,7 @@ def make_tuning_plots(
                     "Mean final-window average policy value",
                     plot_dir / "confirmation_final_window_average_policy_value.png",
                     average_policy_value_target=average_policy_value_target_value,
+                    title_config=title_config,
                 )
             )
 
@@ -425,6 +433,7 @@ def make_tuning_plots(
                 "DREAM random search confirmation: exploitability by iteration",
                 "Exploitability",
                 plot_dir / "confirmation_exploitability_by_iteration.png",
+                title_config=title_config,
             )
         )
         paths.append(
@@ -435,6 +444,7 @@ def make_tuning_plots(
                 "DREAM random search confirmation: exploitability by nodes touched",
                 "Exploitability",
                 plot_dir / "confirmation_exploitability_by_nodes.png",
+                title_config=title_config,
             )
         )
         if "average_policy_value" in confirmation_curves.columns:
@@ -447,6 +457,7 @@ def make_tuning_plots(
                     "Average policy value",
                     plot_dir / "confirmation_average_policy_value_by_iteration.png",
                     average_policy_value_target=average_policy_value_target_value,
+                    title_config=title_config,
                 )
             )
             paths.append(
@@ -458,6 +469,7 @@ def make_tuning_plots(
                     "Average policy value",
                     plot_dir / "confirmation_average_policy_value_by_nodes.png",
                     average_policy_value_target=average_policy_value_target_value,
+                    title_config=title_config,
                 )
             )
         paths.append(
@@ -468,6 +480,7 @@ def make_tuning_plots(
                 "DREAM random search confirmation: policy-value error",
                 "Absolute error from Leduc game value",
                 plot_dir / "confirmation_policy_value_error.png",
+                title_config=title_config,
             )
         )
 
@@ -485,6 +498,7 @@ def make_tuning_plots(
             _paired_delta_plot(
                 delta_summary,
                 plot_dir / "confirmation_paired_delta_final_exploitability.png",
+                title_config=title_config,
             )
         )
     if "final_average_policy_value" in confirmation_summary.columns:
@@ -507,6 +521,7 @@ def make_tuning_plots(
                     plot_dir / "confirmation_paired_delta_final_average_policy_value.png",
                     title="DREAM random search: paired final average policy value delta",
                     xlabel="Candidate minus baseline average policy value",
+                    title_config=title_config,
                 )
             )
     return paths
@@ -520,6 +535,7 @@ def _barh_metric(
     xlabel: str,
     output_path: Path,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.barh(df["config_label"], df[metric_col], xerr=df.get(se_col), capsize=3)
@@ -529,7 +545,7 @@ def _barh_metric(
     elif is_average_policy_value_metric(metric_col.replace("_mean", "")):
         add_average_policy_value_target(ax, target=average_policy_value_target, axis="x")
         ax.legend()
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(xlabel)
     ax.grid(True, axis="x", alpha=0.3)
     fig.tight_layout()
@@ -546,6 +562,7 @@ def _plot_grouped_curve(
     ylabel: str,
     output_path: Path,
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5.2))
     for label, group in curves_df.groupby("config_label"):
@@ -561,7 +578,7 @@ def _plot_grouped_curve(
         add_nash_exploitability_target(ax)
     elif is_average_policy_value_metric(y_col):
         add_average_policy_value_target(ax, target=average_policy_value_target)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(x_col.replace("_", " ").title())
     ax.set_ylabel(ylabel)
     ax.grid(True, alpha=0.3)
@@ -577,6 +594,7 @@ def _paired_delta_plot(
     output_path: Path,
     title: str = "DREAM random search: paired final exploitability delta",
     xlabel: str = "Candidate minus baseline exploitability",
+    title_config: Dict | None = None,
 ) -> Path:
     fig, ax = plt.subplots(figsize=(8.2, 4.8))
     ax.barh(
@@ -586,7 +604,7 @@ def _paired_delta_plot(
         capsize=4,
     )
     ax.axvline(0.0, linestyle="--", linewidth=1.0)
-    ax.set_title(title)
+    ax.set_title(format_plot_title(title, title_config))
     ax.set_xlabel(xlabel)
     ax.grid(True, axis="x", alpha=0.3)
     fig.tight_layout()

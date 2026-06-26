@@ -162,6 +162,7 @@ def create_variant_ablation_plots(
     title_prefix: str,
     diagnostic_metrics: Sequence[tuple[str, str, str]] = (),
     average_policy_value_target: float = LEDUC_AVERAGE_POLICY_VALUE_TARGET,
+    title_config: Dict | None = None,
 ) -> None:
     plot_dir = ensure_dir(output_dir / "plots")
     variant_order = [get_variant_id(variant) for variant in variants]
@@ -176,6 +177,7 @@ def create_variant_ablation_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_exploitability_by_iteration.png",
+        title_config=title_config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -186,6 +188,7 @@ def create_variant_ablation_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_exploitability_by_nodes.png",
+        title_config=title_config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -197,6 +200,7 @@ def create_variant_ablation_plots(
         variant_labels,
         plot_dir / f"{plot_prefix}_average_policy_value_by_iteration.png",
         average_policy_value_target=average_policy_value_target,
+        title_config=title_config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -208,6 +212,7 @@ def create_variant_ablation_plots(
         variant_labels,
         plot_dir / f"{plot_prefix}_average_policy_value_by_nodes.png",
         average_policy_value_target=average_policy_value_target,
+        title_config=title_config,
     )
     plot_curve_by_variant(
         curves_df,
@@ -218,6 +223,7 @@ def create_variant_ablation_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_policy_value_error.png",
+        title_config=title_config,
     )
     for metric, title, ylabel in diagnostic_metrics:
         if metric in curves_df.columns:
@@ -230,6 +236,7 @@ def create_variant_ablation_plots(
                 variant_order,
                 variant_labels,
                 plot_dir / f"{plot_prefix}_{metric}.png",
+                title_config=title_config,
             )
     plot_metric_bar_by_variant(
         summary_df,
@@ -239,6 +246,7 @@ def create_variant_ablation_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_final_exploitability.png",
+        title_config=title_config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -248,6 +256,7 @@ def create_variant_ablation_plots(
         variant_order,
         variant_labels,
         plot_dir / f"{plot_prefix}_final_window_exploitability.png",
+        title_config=title_config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -258,6 +267,7 @@ def create_variant_ablation_plots(
         variant_labels,
         plot_dir / f"{plot_prefix}_final_average_policy_value.png",
         average_policy_value_target=average_policy_value_target,
+        title_config=title_config,
     )
     plot_metric_bar_by_variant(
         summary_df,
@@ -268,6 +278,7 @@ def create_variant_ablation_plots(
         variant_labels,
         plot_dir / f"{plot_prefix}_final_window_average_policy_value.png",
         average_policy_value_target=average_policy_value_target,
+        title_config=title_config,
     )
     if len(paired_df):
         plot_paired_delta_bar(
@@ -278,6 +289,7 @@ def create_variant_ablation_plots(
             variant_order,
             variant_labels,
             plot_dir / f"{plot_prefix}_paired_final_exploitability_delta.png",
+            title_config=title_config,
         )
         plot_paired_delta_bar(
             paired_df,
@@ -287,6 +299,7 @@ def create_variant_ablation_plots(
             variant_order,
             variant_labels,
             plot_dir / f"{plot_prefix}_paired_final_average_policy_value_delta.png",
+            title_config=title_config,
         )
         plot_paired_delta_bar(
             paired_df,
@@ -296,4 +309,5 @@ def create_variant_ablation_plots(
             variant_order,
             variant_labels,
             plot_dir / f"{plot_prefix}_paired_policy_value_error_delta.png",
+            title_config=title_config,
         )

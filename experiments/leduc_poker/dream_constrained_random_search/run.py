@@ -76,6 +76,7 @@ def run_experiment(config: Dict) -> Path:
         confirmation_curves=confirmation_curves,
         confirmation_agg=confirmation_agg,
         average_policy_value_target_value=average_policy_value_target(config),
+        title_config=config,
     )
     print(f"Outputs written to {run_dir}")
     return run_dir
