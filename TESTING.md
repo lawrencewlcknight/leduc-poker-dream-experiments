@@ -213,6 +213,17 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
   --evaluation-interval 1 \
   --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
   --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
+
+python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_layer_norm_network_ablation
 ```
 
 ## Full runs
@@ -234,6 +245,7 @@ python -m experiments.leduc_poker.dream_target_processing_ablation.run
 python -m experiments.leduc_poker.dream_residual_network_ablation.run
 python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
 python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
+python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run
 ```
 
 The full runs can be computationally expensive. Use the smoke tests first after making code changes.

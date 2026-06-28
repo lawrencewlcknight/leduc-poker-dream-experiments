@@ -4,6 +4,7 @@ import torch
 from dream_poker.networks import (
     CenteredAdvantageMLP,
     DuelingMLP,
+    LayerNormMLP,
     MLP,
     ResidualMLP,
     build_network,
@@ -12,20 +13,34 @@ from dream_poker.networks import (
 
 def test_build_network_selects_mlp_variants():
     mlp = build_network("mlp", 4, [8, 8], 3)
+    layer_norm = build_network("layer_norm_mlp", 4, [8, 8], 3)
     residual = build_network("residual_mlp", 4, [8, 8], 3)
+    residual_layer_norm = build_network("residual_layer_norm_mlp", 4, [8, 8], 3)
     centered = build_network("centered_advantage_mlp", 4, [8, 8], 3)
     dueling = build_network("dueling_mlp", 4, [8, 8], 3)
 
     assert isinstance(mlp, MLP)
+    assert isinstance(layer_norm, LayerNormMLP)
     assert isinstance(residual, ResidualMLP)
+    assert isinstance(residual_layer_norm, ResidualMLP)
     assert isinstance(centered, CenteredAdvantageMLP)
     assert isinstance(dueling, DuelingMLP)
 
     x = torch.zeros((2, 4), dtype=torch.float32)
     assert mlp(x).shape == (2, 3)
+    assert layer_norm(x).shape == (2, 3)
     assert residual(x).shape == (2, 3)
+    assert residual_layer_norm(x).shape == (2, 3)
     assert centered(x).shape == (2, 3)
     assert dueling(x).shape == (2, 3)
+
+
+def test_layer_norm_network_variants_include_layer_norm_modules():
+    layer_norm = build_network("layer_norm_mlp", 4, [8, 8], 3)
+    residual_layer_norm = build_network("residual_layer_norm_mlp", 4, [8, 8], 3)
+
+    assert sum(isinstance(module, torch.nn.LayerNorm) for module in layer_norm.modules()) == 2
+    assert sum(isinstance(module, torch.nn.LayerNorm) for module in residual_layer_norm.modules()) == 2
 
 
 def test_centered_advantage_head_outputs_zero_mean_actions():

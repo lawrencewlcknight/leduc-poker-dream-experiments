@@ -38,32 +38,63 @@ class MLP(nn.Module):
         return self.net(x)
 
 
+class LayerNormMLP(nn.Module):
+    """MLP with layer normalisation after each hidden activation."""
+
+    def __init__(self, input_size: int, hidden_sizes: Sequence[int], output_size: int):
+        super().__init__()
+        self.hidden_layers = nn.ModuleList()
+        self.hidden_norms = nn.ModuleList()
+        in_size = int(input_size)
+        for hidden_size in hidden_sizes:
+            hidden_size = int(hidden_size)
+            self.hidden_layers.append(SonnetLinear(in_size, hidden_size))
+            self.hidden_norms.append(nn.LayerNorm(hidden_size))
+            in_size = hidden_size
+        self.output_layer = SonnetLinear(in_size, int(output_size))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for layer, norm in zip(self.hidden_layers, self.hidden_norms):
+            x = norm(torch.relu(layer(x)))
+        return self.output_layer(x)
+
+
 class ResidualHiddenLayer(nn.Module):
     """Hidden layer with a same-width residual connection when dimensions match."""
 
-    def __init__(self, in_size: int, out_size: int):
+    def __init__(self, in_size: int, out_size: int, *, layer_norm: bool = False):
         super().__init__()
         self.linear = SonnetLinear(in_size, out_size)
         self.activation = nn.ReLU()
         self.use_residual = int(in_size) == int(out_size)
+        self.norm = nn.LayerNorm(int(out_size)) if layer_norm else None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.activation(self.linear(x))
         if self.use_residual:
             out = out + x
+        if self.norm is not None:
+            out = self.norm(out)
         return out
 
 
 class ResidualMLP(nn.Module):
     """MLP with residual connections between same-width hidden layers."""
 
-    def __init__(self, input_size: int, hidden_sizes: Sequence[int], output_size: int):
+    def __init__(
+        self,
+        input_size: int,
+        hidden_sizes: Sequence[int],
+        output_size: int,
+        *,
+        layer_norm: bool = False,
+    ):
         super().__init__()
         hidden_sizes = list(map(int, hidden_sizes))
         layers: List[nn.Module] = []
         in_size = int(input_size)
         for hidden_size in hidden_sizes:
-            layers.append(ResidualHiddenLayer(in_size, hidden_size))
+            layers.append(ResidualHiddenLayer(in_size, hidden_size, layer_norm=layer_norm))
             in_size = hidden_size
         layers.append(SonnetLinear(in_size, int(output_size)))
         self.net = nn.Sequential(*layers)
@@ -125,11 +156,22 @@ def build_network(
     network_type = str(network_type).lower()
     if network_type == "mlp":
         return MLP(input_size, hidden_sizes, output_size)
+    if network_type == "layer_norm_mlp":
+        return LayerNormMLP(input_size, hidden_sizes, output_size)
     if network_type == "residual_mlp":
         return ResidualMLP(input_size, hidden_sizes, output_size)
+    if network_type == "residual_layer_norm_mlp":
+        return ResidualMLP(input_size, hidden_sizes, output_size, layer_norm=True)
     if network_type == "centered_advantage_mlp":
         return CenteredAdvantageMLP(input_size, hidden_sizes, output_size)
     if network_type == "dueling_mlp":
         return DuelingMLP(input_size, hidden_sizes, output_size)
-    valid = ["mlp", "residual_mlp", "centered_advantage_mlp", "dueling_mlp"]
+    valid = [
+        "mlp",
+        "layer_norm_mlp",
+        "residual_mlp",
+        "residual_layer_norm_mlp",
+        "centered_advantage_mlp",
+        "dueling_mlp",
+    ]
     raise ValueError(f"network_type must be one of {valid}")

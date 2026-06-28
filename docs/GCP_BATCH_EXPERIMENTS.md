@@ -460,7 +460,7 @@ gcloud batch jobs list --location "$REGION"
 
 To smoke-test the recent DREAM ablations together without installing the
 repository Python dependencies locally, submit tiny Batch jobs for experiments
-13, 14, 15, and 16:
+13, 14, 15, 16, and 17:
 
 ```bash
 ./gcp/submit_recent_ablation_smoke_tests.sh
@@ -601,6 +601,23 @@ The individual commands used by the newest-ablation helper are:
     --evaluation-interval 1 \
     --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
     --output-root outputs/cloud/smoke/leduc_dream_factorised_advantage_head_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp17-layer-norm-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_layer_norm_network_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
@@ -752,6 +769,7 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 14: residual-network ablation | `python -m experiments.leduc_poker.dream_residual_network_ablation.run --output-root outputs/cloud/dream_residual_network_ablation` |
 | Experiment 15: average-strategy weighting ablation | `python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run --output-root outputs/cloud/dream_average_strategy_weighting_ablation` |
 | Experiment 16: factorised advantage-head ablation | `python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run --output-root outputs/cloud/dream_factorised_advantage_head_ablation` |
+| Experiment 17: layer-normalisation network ablation | `python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --output-root outputs/cloud/dream_layer_norm_network_ablation` |
 
 Example:
 

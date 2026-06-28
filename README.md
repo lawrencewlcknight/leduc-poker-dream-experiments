@@ -90,7 +90,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_factorised_advantage_head_ablation/   # Experiment 16
+│       ├── dream_factorised_advantage_head_ablation/   # Experiment 16
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_layer_norm_network_ablation/          # Experiment 17
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -239,6 +243,14 @@ Holds the average-policy and learned-baseline networks fixed at the baseline `2x
 
 **Question:** does imposing a value/advantage factorisation on the DREAM advantage approximator improve optimisation stability or final average-policy quality?
 
+### 17. DREAM layer-normalisation network ablation
+
+[`experiments/leduc_poker/dream_layer_norm_network_ablation/`](experiments/leduc_poker/dream_layer_norm_network_ablation/README.md)
+
+Compares plain MLPs, layer-normalised MLPs, and residual layer-normalised MLPs at fixed width `32` and hidden depths `2`, `4`, and `8`. The same treatment is applied to the average-policy, advantage, and learned-baseline networks within each variant.
+
+**Question:** does hidden-activation normalisation improve DREAM optimisation stability or final average-policy quality when all non-architecture settings are held fixed?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -307,6 +319,9 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
 
 # Experiment 16 — factorised advantage-head ablation
 python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
+
+# Experiment 17 — layer-normalisation network ablation
+python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run
 ```
 
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
@@ -317,7 +332,7 @@ the GCP environment variables from
 `python3` capable of running the submission helper.
 
 ```bash
-# Submit Experiments 13-16 together with one shared timestamp.
+# Submit Experiments 13-17 together with one shared timestamp.
 ./gcp/submit_recent_ablation_smoke_tests.sh
 
 # Leduc Experiment 10 — network-width ablation smoke test on GCP
@@ -447,6 +462,24 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 17 — layer-normalisation network ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp17-layer-norm-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_layer_norm_network_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -524,6 +557,17 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
   --evaluation-interval 1 \
   --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
   --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
+
+python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_layer_norm_network_ablation
 ```
 
 For local smoke tests across all experiments:
@@ -673,6 +717,17 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
   --evaluation-interval 1 \
   --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
   --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
+
+python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_layer_norm_network_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).
@@ -912,6 +967,25 @@ plots/dream_factorised_advantage_head_exploitability_by_iteration.png
 plots/dream_factorised_advantage_head_final_exploitability.png
 plots/dream_factorised_advantage_head_final_exploitability_by_parameters.png
 plots/dream_factorised_advantage_head_paired_final_exploitability_delta.png
+```
+
+Layer-normalisation network ablations additionally export the same
+architecture-ablation files as the width/depth/capacity experiments, with
+network-treatment columns:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_layer_norm_network_exploitability_by_iteration.png
+plots/dream_layer_norm_network_final_exploitability.png
+plots/dream_layer_norm_network_final_exploitability_by_parameters.png
+plots/dream_layer_norm_network_paired_final_exploitability_delta.png
 ```
 
 ## Notes for adding future experiments
