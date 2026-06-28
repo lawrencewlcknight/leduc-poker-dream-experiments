@@ -86,7 +86,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_average_strategy_weighting_ablation/  # Experiment 15
+│       ├── dream_average_strategy_weighting_ablation/  # Experiment 15
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_factorised_advantage_head_ablation/   # Experiment 16
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -227,6 +231,14 @@ Compares the current DREAM average-policy target weighting, `sqrt(iteration * re
 
 **Question:** does average-strategy iteration weighting improve DREAM stability or final average-policy quality when every other core training parameter is held fixed?
 
+### 16. DREAM factorised advantage-head ablation
+
+[`experiments/leduc_poker/dream_factorised_advantage_head_ablation/`](experiments/leduc_poker/dream_factorised_advantage_head_ablation/README.md)
+
+Holds the average-policy and learned-baseline networks fixed at the baseline `2x32` MLP architecture and compares direct action outputs with centred action-advantage outputs and dueling-style state-value-plus-action-advantage outputs for the player-specific advantage networks. The comparison is run at hidden depths `2`, `4`, and `8`, all at width `32`.
+
+**Question:** does imposing a value/advantage factorisation on the DREAM advantage approximator improve optimisation stability or final average-policy quality?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -292,6 +304,9 @@ python -m experiments.leduc_poker.dream_residual_network_ablation.run
 
 # Experiment 15 — average-strategy weighting ablation
 python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
+
+# Experiment 16 — factorised advantage-head ablation
+python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
 ```
 
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
@@ -302,7 +317,7 @@ the GCP environment variables from
 `python3` capable of running the submission helper.
 
 ```bash
-# Submit Experiments 13-15 together with one shared timestamp.
+# Submit Experiments 13-16 together with one shared timestamp.
 ./gcp/submit_recent_ablation_smoke_tests.sh
 
 # Leduc Experiment 10 — network-width ablation smoke test on GCP
@@ -414,6 +429,24 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 16 — factorised advantage-head ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp16-factorised-head-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_factorised_advantage_head_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -480,6 +513,17 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run 
   --batch-size-baseline 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_average_strategy_weighting_ablation
+
+python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
 ```
 
 For local smoke tests across all experiments:
@@ -618,6 +662,17 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run 
   --batch-size-baseline 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_average_strategy_weighting_ablation
+
+python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).
@@ -838,6 +893,25 @@ plots/dream_average_strategy_weighting_exploitability_by_iteration.png
 plots/dream_average_strategy_weighting_average_policy_value_by_iteration.png
 plots/dream_average_strategy_weighting_policy_loss.png
 plots/dream_average_strategy_weighting_paired_final_exploitability_delta.png
+```
+
+Factorised advantage-head ablations additionally export the same
+architecture-ablation files as the width/depth/capacity experiments, with
+advantage-head treatment columns:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_factorised_advantage_head_exploitability_by_iteration.png
+plots/dream_factorised_advantage_head_final_exploitability.png
+plots/dream_factorised_advantage_head_final_exploitability_by_parameters.png
+plots/dream_factorised_advantage_head_paired_final_exploitability_delta.png
 ```
 
 ## Notes for adding future experiments

@@ -32,7 +32,7 @@ does not have `requirements.txt` installed.
 
 For smoke tests that run on GCP instead of the local Python environment, use the
 Batch smoke-test commands in `README.md` or `docs/GCP_BATCH_EXPERIMENTS.md`.
-The three newest ablations can be submitted together with:
+The recent DREAM ablations can be submitted together with:
 
 ```bash
 ./gcp/submit_recent_ablation_smoke_tests.sh
@@ -202,6 +202,17 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run 
   --batch-size-baseline 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_average_strategy_weighting_ablation
+
+python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
 ```
 
 ## Full runs
@@ -222,6 +233,7 @@ python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run
 python -m experiments.leduc_poker.dream_target_processing_ablation.run
 python -m experiments.leduc_poker.dream_residual_network_ablation.run
 python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
+python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
 ```
 
 The full runs can be computationally expensive. Use the smoke tests first after making code changes.

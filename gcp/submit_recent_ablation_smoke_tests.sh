@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Submit GCP Batch smoke tests for the newest DREAM ablations:
+# Submit GCP Batch smoke tests for recent DREAM ablations:
 #   Experiment 13: advantage-target processing
 #   Experiment 14: residual networks
 #   Experiment 15: average-strategy weighting
+#   Experiment 16: factorised advantage heads
 #
 # Required environment variables are inherited from submit_batch_experiment.sh:
 #   PROJECT_ID, REGION, BUCKET, SA_EMAIL
@@ -12,7 +13,7 @@ set -euo pipefail
 # Usage:
 #   ./gcp/submit_recent_ablation_smoke_tests.sh [MACHINE_TYPE] [MAX_RUN_SECONDS] [CPU_MILLI] [MEMORY_MIB]
 #
-# Set DRY_RUN=1 to print the three submit commands without calling gcloud.
+# Set DRY_RUN=1 to print the submit commands without calling gcloud.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUBMIT_SCRIPT="${SCRIPT_DIR}/submit_batch_experiment.sh"
@@ -62,3 +63,7 @@ submit_smoke_test \
 submit_smoke_test \
   "leduc-dream-exp15-avg-weighting-smoke-${RUN_ID}" \
   "python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --batch-size-advantage 1 --batch-size-strategy 1 --batch-size-baseline 1 --output-root outputs/cloud/smoke/leduc_dream_average_strategy_weighting_ablation"
+
+submit_smoke_test \
+  "leduc-dream-exp16-factorised-head-smoke-${RUN_ID}" \
+  "python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 --output-root outputs/cloud/smoke/leduc_dream_factorised_advantage_head_ablation"

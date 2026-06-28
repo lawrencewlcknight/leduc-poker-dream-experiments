@@ -72,6 +72,49 @@ class ResidualMLP(nn.Module):
         return self.net(x)
 
 
+class CenteredAdvantageMLP(nn.Module):
+    """MLP head whose action outputs are centred to zero mean per state."""
+
+    def __init__(self, input_size: int, hidden_sizes: Sequence[int], output_size: int):
+        super().__init__()
+        self.hidden_layers = nn.ModuleList()
+        in_size = int(input_size)
+        for hidden_size in hidden_sizes:
+            hidden_size = int(hidden_size)
+            self.hidden_layers.append(SonnetLinear(in_size, hidden_size))
+            in_size = hidden_size
+        self.action_head = SonnetLinear(in_size, int(output_size))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for layer in self.hidden_layers:
+            x = torch.relu(layer(x))
+        raw_advantages = self.action_head(x)
+        return raw_advantages - raw_advantages.mean(dim=-1, keepdim=True)
+
+
+class DuelingMLP(nn.Module):
+    """MLP with a scalar state head plus centred action-advantage head."""
+
+    def __init__(self, input_size: int, hidden_sizes: Sequence[int], output_size: int):
+        super().__init__()
+        self.hidden_layers = nn.ModuleList()
+        in_size = int(input_size)
+        for hidden_size in hidden_sizes:
+            hidden_size = int(hidden_size)
+            self.hidden_layers.append(SonnetLinear(in_size, hidden_size))
+            in_size = hidden_size
+        self.value_head = SonnetLinear(in_size, 1)
+        self.action_head = SonnetLinear(in_size, int(output_size))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for layer in self.hidden_layers:
+            x = torch.relu(layer(x))
+        state_value = self.value_head(x)
+        raw_advantages = self.action_head(x)
+        centred_advantages = raw_advantages - raw_advantages.mean(dim=-1, keepdim=True)
+        return state_value + centred_advantages
+
+
 def build_network(
     network_type: str,
     input_size: int,
@@ -84,4 +127,9 @@ def build_network(
         return MLP(input_size, hidden_sizes, output_size)
     if network_type == "residual_mlp":
         return ResidualMLP(input_size, hidden_sizes, output_size)
-    raise ValueError("network_type must be one of ['mlp', 'residual_mlp']")
+    if network_type == "centered_advantage_mlp":
+        return CenteredAdvantageMLP(input_size, hidden_sizes, output_size)
+    if network_type == "dueling_mlp":
+        return DuelingMLP(input_size, hidden_sizes, output_size)
+    valid = ["mlp", "residual_mlp", "centered_advantage_mlp", "dueling_mlp"]
+    raise ValueError(f"network_type must be one of {valid}")

@@ -1,19 +1,57 @@
 import pytest
 import torch
 
-from dream_poker.networks import MLP, ResidualMLP, build_network
+from dream_poker.networks import (
+    CenteredAdvantageMLP,
+    DuelingMLP,
+    MLP,
+    ResidualMLP,
+    build_network,
+)
 
 
 def test_build_network_selects_mlp_variants():
     mlp = build_network("mlp", 4, [8, 8], 3)
     residual = build_network("residual_mlp", 4, [8, 8], 3)
+    centered = build_network("centered_advantage_mlp", 4, [8, 8], 3)
+    dueling = build_network("dueling_mlp", 4, [8, 8], 3)
 
     assert isinstance(mlp, MLP)
     assert isinstance(residual, ResidualMLP)
+    assert isinstance(centered, CenteredAdvantageMLP)
+    assert isinstance(dueling, DuelingMLP)
 
     x = torch.zeros((2, 4), dtype=torch.float32)
     assert mlp(x).shape == (2, 3)
     assert residual(x).shape == (2, 3)
+    assert centered(x).shape == (2, 3)
+    assert dueling(x).shape == (2, 3)
+
+
+def test_centered_advantage_head_outputs_zero_mean_actions():
+    net = build_network("centered_advantage_mlp", 4, [8], 3)
+    x = torch.randn((5, 4), dtype=torch.float32)
+
+    out = net(x)
+
+    torch.testing.assert_close(
+        out.mean(dim=-1),
+        torch.zeros(5, dtype=torch.float32),
+        atol=1e-6,
+        rtol=1e-6,
+    )
+
+
+def test_dueling_head_separates_scalar_value_and_centered_action_terms():
+    net = build_network("dueling_mlp", 4, [8], 3)
+    x = torch.randn((5, 4), dtype=torch.float32)
+
+    out = net(x)
+
+    assert out.shape == (5, 3)
+    assert isinstance(net, DuelingMLP)
+    assert net.value_head.layer.out_features == 1
+    assert net.action_head.layer.out_features == 3
 
 
 def test_build_network_rejects_unknown_type():
