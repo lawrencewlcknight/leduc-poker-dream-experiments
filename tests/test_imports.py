@@ -18,6 +18,7 @@ def test_import_experiment_configs():
     import experiments.leduc_poker.dream_baseline_network_budget_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_checkpoint_stability.config  # noqa: F401
     import experiments.leduc_poker.dream_constrained_random_search.config  # noqa: F401
+    import experiments.leduc_poker.dream_average_strategy_weighting_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_epsilon_exploration_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_final_only_policy_training_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_lr_schedule_ablation.config  # noqa: F401

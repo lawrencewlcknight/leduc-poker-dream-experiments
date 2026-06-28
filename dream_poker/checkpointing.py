@@ -125,6 +125,7 @@ def save_optional_full_checkpoint(
             "policy_network_type": solver._policy_network_type,
             "advantage_network_type": solver._advantage_network_type,
             "baseline_network_type": solver._baseline_network_type,
+            "average_strategy_weighting": solver._average_strategy_weighting,
             "policy_network_state_dict": solver._policy_network.state_dict(),
             "advantage_network_state_dicts": [n.state_dict() for n in solver._advantage_networks],
             "baseline_network_state_dicts": [n.state_dict() for n in solver._baseline_networks],

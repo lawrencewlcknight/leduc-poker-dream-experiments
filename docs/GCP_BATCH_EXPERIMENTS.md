@@ -655,6 +655,7 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 12: capacity-extremes ablation | `python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run --output-root outputs/cloud/dream_network_capacity_extremes_ablation` |
 | Experiment 13: target-processing ablation | `python -m experiments.leduc_poker.dream_target_processing_ablation.run --output-root outputs/cloud/dream_target_processing_ablation` |
 | Experiment 14: residual-network ablation | `python -m experiments.leduc_poker.dream_residual_network_ablation.run --output-root outputs/cloud/dream_residual_network_ablation` |
+| Experiment 15: average-strategy weighting ablation | `python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run --output-root outputs/cloud/dream_average_strategy_weighting_ablation` |
 
 Example:
 

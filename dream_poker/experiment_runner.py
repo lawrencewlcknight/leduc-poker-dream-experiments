@@ -97,6 +97,7 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
         compute_exploitability=config["compute_exploitability"],
         game_value_player_0=config.get("game_value_player_0"),
         average_policy_value_target=config.get("average_policy_value_target"),
+        average_strategy_weighting=config.get("average_strategy_weighting", "linear"),
         target_processing=config.get("target_processing", "none"),
         target_clip_value=config.get("target_clip_value", 1.0),
         target_standardize_epsilon=config.get("target_standardize_epsilon", 1e-6),

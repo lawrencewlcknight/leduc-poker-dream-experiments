@@ -41,6 +41,19 @@ from dream_poker.replay import (
 from dream_poker.seeding import set_seed
 
 
+VALID_AVERAGE_STRATEGY_WEIGHTINGS = {"linear", "uniform"}
+
+
+def _normalise_average_strategy_weighting(value: str) -> str:
+    mode = str(value).lower()
+    if mode not in VALID_AVERAGE_STRATEGY_WEIGHTINGS:
+        raise ValueError(
+            "average_strategy_weighting must be one of "
+            f"{sorted(VALID_AVERAGE_STRATEGY_WEIGHTINGS)}, got {value!r}"
+        )
+    return mode
+
+
 # -----------------------------
 # DREAM-style OpenSpiel solver
 # -----------------------------
@@ -86,6 +99,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         compute_exploitability: bool = True,
         game_value_player_0: Optional[float] = None,
         average_policy_value_target: Optional[float] = None,
+        average_strategy_weighting: str = "linear",
         target_processing: str = "none",
         target_clip_value: float = 1.0,
         target_standardize_epsilon: float = 1e-6,
@@ -135,6 +149,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             float(average_policy_value_target)
             if average_policy_value_target is not None
             else LEDUC_AVERAGE_POLICY_VALUE_TARGET
+        )
+        self._average_strategy_weighting = _normalise_average_strategy_weighting(
+            average_strategy_weighting
         )
         valid_target_processing = {"none", "standardize", "clip", "standardize_clip"}
         self._target_processing = str(target_processing).lower()
@@ -357,6 +374,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "target_processing": self._target_processing,
             "target_clip_value": float(self._target_clip_value),
             "target_standardize_epsilon": float(self._target_standardize_epsilon),
+            "average_strategy_weighting": self._average_strategy_weighting,
             "policy_network_type": self._policy_network_type,
             "advantage_network_type": self._advantage_network_type,
             "baseline_network_type": self._baseline_network_type,
@@ -427,6 +445,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 "target_standardize_epsilon",
                 self._target_standardize_epsilon,
             )
+        )
+        self._average_strategy_weighting = _normalise_average_strategy_weighting(
+            state.get("average_strategy_weighting", self._average_strategy_weighting)
         )
         self._policy_network_type = str(
             state.get("policy_network_type", self._policy_network_type)
@@ -713,6 +734,28 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._restore_rng_state(rng_state)
         return loss
 
+    def _average_strategy_loss_multiplier(
+        self,
+        iterations: np.ndarray,
+        imp_weights: np.ndarray,
+    ) -> np.ndarray:
+        iterations = np.asarray(iterations, dtype=np.float32)
+        imp_weights = np.asarray(imp_weights, dtype=np.float32)
+        imp_weights = np.clip(imp_weights, 0.0, 100.0)
+        if self._average_strategy_weighting == "linear":
+            iteration_weights = np.maximum(iterations, 1.0)
+        elif self._average_strategy_weighting == "uniform":
+            iteration_weights = np.ones_like(iterations, dtype=np.float32)
+        else:
+            raise ValueError(
+                "average_strategy_weighting must be one of "
+                f"{sorted(VALID_AVERAGE_STRATEGY_WEIGHTINGS)}, "
+                f"got {self._average_strategy_weighting!r}"
+            )
+        return np.sqrt(
+            iteration_weights * np.maximum(imp_weights, 1e-8)
+        ).astype(np.float32)
+
     def _learn_strategy_network(self) -> float:
         if len(self._strategy_memories) < self._batch_size_strategy:
             return float("nan")
@@ -724,8 +767,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             strategies = np.asarray([s.strategy_action_probs for s in samples], dtype=np.float32)
             iterations = np.asarray([s.iteration for s in samples], dtype=np.float32).reshape(-1, 1)
             imp_weights = np.asarray([s.weight for s in samples], dtype=np.float32).reshape(-1, 1)
-            imp_weights = np.clip(imp_weights, 0.0, 100.0)
-            mult = np.sqrt(np.maximum(iterations, 1.0) * np.maximum(imp_weights, 1e-8)).astype(np.float32)
+            mult = self._average_strategy_loss_multiplier(iterations, imp_weights)
             x = torch.from_numpy(info_states)
             y = torch.from_numpy(strategies)
             m = torch.from_numpy(mult)

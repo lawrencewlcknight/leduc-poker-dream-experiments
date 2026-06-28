@@ -82,7 +82,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_residual_network_ablation/            # Experiment 14
+│       ├── dream_residual_network_ablation/            # Experiment 14
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_average_strategy_weighting_ablation/  # Experiment 15
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -215,6 +219,14 @@ Compares plain MLPs against residual MLPs at fixed width `32` and hidden depths 
 
 **Question:** do residual skip connections improve DREAM optimisation stability or final average-policy quality when all non-architecture settings are held fixed?
 
+### 15. DREAM average-strategy weighting ablation
+
+[`experiments/leduc_poker/dream_average_strategy_weighting_ablation/`](experiments/leduc_poker/dream_average_strategy_weighting_ablation/README.md)
+
+Compares the current DREAM average-policy target weighting, `sqrt(iteration * reach_ratio)`, with uniform average-strategy iteration weighting, `sqrt(reach_ratio)`. Both arms retain DREAM's sampled-traversal reach-ratio correction; the intended treatment variable is only the CFR-style iteration weighting used in the average-policy supervised loss.
+
+**Question:** does average-strategy iteration weighting improve DREAM stability or final average-policy quality when every other core training parameter is held fixed?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -277,10 +289,13 @@ python -m experiments.leduc_poker.dream_target_processing_ablation.run
 
 # Experiment 14 — residual-network ablation
 python -m experiments.leduc_poker.dream_residual_network_ablation.run
+
+# Experiment 15 — average-strategy weighting ablation
+python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
 ```
 
-To run quick smoke tests for the network-architecture experiments on GCP, use
-the Batch submission script. These commands do not require the repository Python
+To run quick smoke tests for later DREAM ablations on GCP, use the Batch
+submission script. These commands do not require the repository Python
 dependencies to be installed locally; they only require the Google Cloud CLI,
 the GCP environment variables from
 [`docs/GCP_BATCH_EXPERIMENTS.md`](docs/GCP_BATCH_EXPERIMENTS.md), and a local
@@ -355,9 +370,29 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 15 — average-strategy weighting ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp15-avg-weighting-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --batch-size-advantage 1 \
+    --batch-size-strategy 1 \
+    --batch-size-baseline 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_average_strategy_weighting_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
-For a quick local smoke test of just the network-architecture experiments:
+For a quick local smoke test of later DREAM ablations:
 
 Run these from an activated environment that has `requirements.txt` installed. If
 you see `ModuleNotFoundError: No module named 'matplotlib'`, the selected
@@ -408,6 +443,19 @@ python -m experiments.leduc_poker.dream_residual_network_ablation.run \
   --evaluation-interval 1 \
   --variants plain_layers2_width32,residual_layers2_width32 \
   --output-root outputs/smoke_tests/dream_residual_network_ablation
+
+python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_average_strategy_weighting_ablation
 ```
 
 For local smoke tests across all experiments:
@@ -533,6 +581,19 @@ python -m experiments.leduc_poker.dream_residual_network_ablation.run \
   --evaluation-interval 1 \
   --variants plain_layers2_width32,residual_layers2_width32 \
   --output-root outputs/smoke_tests/dream_residual_network_ablation
+
+python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_average_strategy_weighting_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).
@@ -735,6 +796,24 @@ plots/dream_residual_network_exploitability_by_iteration.png
 plots/dream_residual_network_final_exploitability.png
 plots/dream_residual_network_final_exploitability_by_parameters.png
 plots/dream_residual_network_paired_final_exploitability_delta.png
+```
+
+Average-strategy weighting ablations additionally export the same matched-variant
+files as the scalar ablations, with average-policy weighting columns:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_average_strategy_weighting_exploitability_by_iteration.png
+plots/dream_average_strategy_weighting_average_policy_value_by_iteration.png
+plots/dream_average_strategy_weighting_policy_loss.png
+plots/dream_average_strategy_weighting_paired_final_exploitability_delta.png
 ```
 
 ## Notes for adding future experiments
