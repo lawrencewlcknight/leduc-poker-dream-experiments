@@ -458,9 +458,27 @@ After submitting the smoke test, this command can be used to see whether the exp
 gcloud batch jobs list --location "$REGION"
 ```
 
-To smoke-test the network-architecture experiments without installing the
+To smoke-test the newest DREAM ablations together without installing the
 repository Python dependencies locally, submit tiny Batch jobs for experiments
-10, 11, and 12:
+13, 14, and 15:
+
+```bash
+./gcp/submit_recent_ablation_smoke_tests.sh
+```
+
+The helper above calls `gcp/submit_batch_experiment.sh` once per experiment with
+a shared `RUN_ID`. To override the VM shape, pass the same final resource
+arguments used by the generic submitter:
+
+```bash
+./gcp/submit_recent_ablation_smoke_tests.sh n2-standard-4 3600 4000 16000
+```
+
+To preview the three submissions without creating Batch jobs, run
+`DRY_RUN=1 ./gcp/submit_recent_ablation_smoke_tests.sh`.
+
+To smoke-test the network-architecture experiments, submit tiny Batch jobs for
+experiments 10, 11, and 12:
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
@@ -506,6 +524,66 @@ repository Python dependencies locally, submit tiny Batch jobs for experiments
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
     --output-root outputs/cloud/smoke/leduc_dream_network_capacity_extremes_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+```
+
+The individual commands used by the newest-ablation helper are:
+
+```bash
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp13-target-processing-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_target_processing_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --batch-size-advantage 1 \
+    --batch-size-strategy 1 \
+    --batch-size-baseline 1 \
+    --evaluation-interval 1 \
+    --variants raw_targets_dream_baseline,standardized_clipped_targets \
+    --output-root outputs/cloud/smoke/leduc_dream_target_processing_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp14-residual-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_residual_network_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants plain_layers2_width32,residual_layers2_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_residual_network_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp15-avg-weighting-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --batch-size-advantage 1 \
+    --batch-size-strategy 1 \
+    --batch-size-baseline 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_average_strategy_weighting_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \

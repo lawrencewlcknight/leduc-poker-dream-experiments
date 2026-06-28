@@ -302,6 +302,9 @@ the GCP environment variables from
 `python3` capable of running the submission helper.
 
 ```bash
+# Submit Experiments 13-15 together with one shared timestamp.
+./gcp/submit_recent_ablation_smoke_tests.sh
+
 # Leduc Experiment 10 — network-width ablation smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
   "leduc-dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
@@ -348,6 +351,27 @@ the GCP environment variables from
     --baseline-network-train-steps 20 \
     --evaluation-interval 5 \
     --output-root outputs/cloud/smoke/leduc_dream_network_capacity_extremes_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 13 — advantage-target processing ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp13-target-processing-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_target_processing_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --batch-size-advantage 1 \
+    --batch-size-strategy 1 \
+    --batch-size-baseline 1 \
+    --evaluation-interval 1 \
+    --variants raw_targets_dream_baseline,standardized_clipped_targets \
+    --output-root outputs/cloud/smoke/leduc_dream_target_processing_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \

@@ -32,6 +32,11 @@ does not have `requirements.txt` installed.
 
 For smoke tests that run on GCP instead of the local Python environment, use the
 Batch smoke-test commands in `README.md` or `docs/GCP_BATCH_EXPERIMENTS.md`.
+The three newest ablations can be submitted together with:
+
+```bash
+./gcp/submit_recent_ablation_smoke_tests.sh
+```
 
 ```bash
 python -m experiments.leduc_poker.dream_multiseed_baseline.run \
