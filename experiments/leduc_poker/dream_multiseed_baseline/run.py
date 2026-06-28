@@ -74,6 +74,9 @@ def run_single_seed(seed: int, config: Dict, output_dir: Path) -> Tuple[pd.DataF
         compute_exploitability=config["compute_exploitability"],
         game_value_player_0=config.get("game_value_player_0"),
         average_policy_value_target=config.get("average_policy_value_target"),
+        target_processing=config.get("target_processing", "none"),
+        target_clip_value=config.get("target_clip_value", 1.0),
+        target_standardize_epsilon=config.get("target_standardize_epsilon", 1e-6),
         seed=seed,
     )
     curves = solver.solve(isolate_policy_training_rng=config.get("isolate_policy_training_rng", True))

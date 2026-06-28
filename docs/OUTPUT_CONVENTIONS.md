@@ -98,6 +98,17 @@ Trajectory-count ablations should additionally expose sample-efficiency columns 
 - `plots/*_exploitability_by_sampled_trajectories.png` — cost-normalised exploitability curve;
 - `plots/*_paired_sample_trajectory_auc_delta.png` — matched-seed sample-efficiency delta plot.
 
+Target-processing ablations should expose both raw replay-target diagnostics and processed loss-target diagnostics:
+
+- `target_processing` — one of `none`, `standardize`, `clip`, or `standardize_clip`;
+- `target_clip_value` — symmetric clipping threshold for variants that clip targets;
+- `target_standardize_epsilon` — minimum standard deviation used while standardising;
+- `processed_advantage_target_variance` — mean processed-target variance across players;
+- `target_standardization_scale` — mean standardisation scale across players;
+- `target_clip_fraction` — mean clipped-entry fraction across players;
+- `plots/*_processed_advantage_target_variance.png` — processed-target variance diagnostic;
+- `plots/*_target_clip_fraction.png` — clipping diagnostic.
+
 The core metric names should remain stable across experiments:
 
 - `exploitability`
@@ -187,6 +198,21 @@ Trajectories-per-iteration variant columns should remain stable:
 - `delta_final_exploitability`
 - `delta_exploitability_auc_by_nodes`
 - `delta_exploitability_auc_by_sampled_trajectories`
+
+Target-processing variant columns should remain stable:
+
+- `variant`
+- `variant_label`
+- `target_processing`
+- `target_clip_value`
+- `target_standardize_epsilon`
+- `final_advantage_target_variance`
+- `final_processed_advantage_target_variance`
+- `final_target_standardization_scale`
+- `final_target_clip_fraction`
+- `delta_final_exploitability`
+- `delta_final_policy_value_error`
+- `delta_final_processed_advantage_target_variance`
 
 Checkpoint head-to-head metric names should also remain stable:
 

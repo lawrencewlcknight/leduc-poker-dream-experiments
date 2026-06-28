@@ -83,6 +83,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         compute_exploitability: bool = True,
         game_value_player_0: Optional[float] = None,
         average_policy_value_target: Optional[float] = None,
+        target_processing: str = "none",
+        target_clip_value: float = 1.0,
+        target_standardize_epsilon: float = 1e-6,
         seed: Optional[int] = None,
     ):
         if policy is not None:
@@ -127,6 +130,19 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             if average_policy_value_target is not None
             else LEDUC_AVERAGE_POLICY_VALUE_TARGET
         )
+        valid_target_processing = {"none", "standardize", "clip", "standardize_clip"}
+        self._target_processing = str(target_processing).lower()
+        if self._target_processing not in valid_target_processing:
+            raise ValueError(
+                f"target_processing must be one of {sorted(valid_target_processing)}, "
+                f"got {target_processing!r}"
+            )
+        self._target_clip_value = float(target_clip_value)
+        if self._target_clip_value <= 0.0:
+            raise ValueError("target_clip_value must be positive")
+        self._target_standardize_epsilon = float(target_standardize_epsilon)
+        if self._target_standardize_epsilon <= 0.0:
+            raise ValueError("target_standardize_epsilon must be positive")
 
         if seed is not None:
             set_seed(seed)
@@ -163,6 +179,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._last_advantage_grad_norm = [np.nan] * self._num_players
         self._last_baseline_grad_norm = [np.nan] * self._num_players
         self._last_policy_grad_norm = np.nan
+        self._last_processed_advantage_target_mean = [np.nan] * self._num_players
+        self._last_processed_advantage_target_variance = [np.nan] * self._num_players
+        self._last_processed_advantage_target_abs_mean = [np.nan] * self._num_players
+        self._last_target_standardization_mean = [np.nan] * self._num_players
+        self._last_target_standardization_scale = [np.nan] * self._num_players
+        self._last_target_clip_fraction = [np.nan] * self._num_players
         self._policy_training_events = 0
         self._policy_gradient_steps_total = 0
 
@@ -290,11 +312,30 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "last_advantage_grad_norm": list(self._last_advantage_grad_norm),
             "last_baseline_grad_norm": list(self._last_baseline_grad_norm),
             "last_policy_grad_norm": float(self._last_policy_grad_norm),
+            "last_processed_advantage_target_mean": list(
+                self._last_processed_advantage_target_mean
+            ),
+            "last_processed_advantage_target_variance": list(
+                self._last_processed_advantage_target_variance
+            ),
+            "last_processed_advantage_target_abs_mean": list(
+                self._last_processed_advantage_target_abs_mean
+            ),
+            "last_target_standardization_mean": list(
+                self._last_target_standardization_mean
+            ),
+            "last_target_standardization_scale": list(
+                self._last_target_standardization_scale
+            ),
+            "last_target_clip_fraction": list(self._last_target_clip_fraction),
             "policy_training_events": int(self._policy_training_events),
             "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
             "learning_rate_schedule": self._learning_rate_schedule,
             "learning_rate_end": float(self._learning_rate_end),
             "current_learning_rate": float(self._current_learning_rate),
+            "target_processing": self._target_processing,
+            "target_clip_value": float(self._target_clip_value),
+            "target_standardize_epsilon": float(self._target_standardize_epsilon),
             "policy_network": self._policy_network.state_dict(),
             "optimizer_policy": self._optimizer_policy.state_dict(),
             "advantage_networks": [net.state_dict() for net in self._advantage_networks],
@@ -323,11 +364,46 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             state.get("last_baseline_grad_norm", [np.nan] * self._num_players)
         )
         self._last_policy_grad_norm = float(state.get("last_policy_grad_norm", np.nan))
+        self._last_processed_advantage_target_mean = list(
+            state.get(
+                "last_processed_advantage_target_mean",
+                [np.nan] * self._num_players,
+            )
+        )
+        self._last_processed_advantage_target_variance = list(
+            state.get(
+                "last_processed_advantage_target_variance",
+                [np.nan] * self._num_players,
+            )
+        )
+        self._last_processed_advantage_target_abs_mean = list(
+            state.get(
+                "last_processed_advantage_target_abs_mean",
+                [np.nan] * self._num_players,
+            )
+        )
+        self._last_target_standardization_mean = list(
+            state.get("last_target_standardization_mean", [np.nan] * self._num_players)
+        )
+        self._last_target_standardization_scale = list(
+            state.get("last_target_standardization_scale", [np.nan] * self._num_players)
+        )
+        self._last_target_clip_fraction = list(
+            state.get("last_target_clip_fraction", [np.nan] * self._num_players)
+        )
         self._policy_training_events = int(state.get("policy_training_events", 0))
         self._policy_gradient_steps_total = int(state.get("policy_gradient_steps_total", 0))
         self._learning_rate_schedule = str(state.get("learning_rate_schedule", self._learning_rate_schedule))
         self._learning_rate_end = float(state.get("learning_rate_end", self._learning_rate_end))
         self._current_learning_rate = float(state.get("current_learning_rate", self._current_learning_rate))
+        self._target_processing = str(state.get("target_processing", self._target_processing))
+        self._target_clip_value = float(state.get("target_clip_value", self._target_clip_value))
+        self._target_standardize_epsilon = float(
+            state.get(
+                "target_standardize_epsilon",
+                self._target_standardize_epsilon,
+            )
+        )
 
         self._policy_network.load_state_dict(state["policy_network"])
         self._optimizer_policy.load_state_dict(state["optimizer_policy"])
@@ -483,6 +559,47 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             values = self._baseline_networks[traverser](x)[0].cpu().numpy()
         return values.astype(np.float32)
 
+    def _process_advantage_targets(self, targets: np.ndarray, player: int) -> np.ndarray:
+        """Transform sampled advantage targets for the supervised fitting loss."""
+        raw = np.asarray(targets, dtype=np.float32)
+        processed = raw.copy()
+        raw_mean = float(np.mean(raw)) if raw.size else float("nan")
+
+        standardization_mean = 0.0
+        standardization_scale = 1.0
+        if self._target_processing in {"standardize", "standardize_clip"}:
+            standardization_mean = raw_mean
+            standardization_scale = max(
+                float(np.std(processed)), self._target_standardize_epsilon
+            )
+            processed = (processed - standardization_mean) / standardization_scale
+
+        clip_fraction = 0.0
+        if self._target_processing in {"clip", "standardize_clip"}:
+            before_clip = processed.copy()
+            processed = np.clip(
+                processed,
+                -self._target_clip_value,
+                self._target_clip_value,
+            )
+            clip_fraction = (
+                float(np.mean(before_clip != processed)) if processed.size else 0.0
+            )
+
+        self._last_processed_advantage_target_mean[player] = (
+            float(np.mean(processed)) if processed.size else float("nan")
+        )
+        self._last_processed_advantage_target_variance[player] = (
+            float(np.var(processed)) if processed.size else float("nan")
+        )
+        self._last_processed_advantage_target_abs_mean[player] = (
+            float(np.mean(np.abs(processed))) if processed.size else float("nan")
+        )
+        self._last_target_standardization_mean[player] = float(standardization_mean)
+        self._last_target_standardization_scale[player] = float(standardization_scale)
+        self._last_target_clip_fraction[player] = float(clip_fraction)
+        return processed.astype(np.float32)
+
     # ---- Learning updates ----
     def _learn_advantage_network(self, player: int) -> float:
         if len(self._advantage_memories[player]) < self._batch_size_advantage:
@@ -494,6 +611,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             samples = self._advantage_memories[player].sample(self._batch_size_advantage)
             info_states = np.asarray([s.info_state for s in samples], dtype=np.float32)
             targets = np.asarray([s.advantage for s in samples], dtype=np.float32)
+            targets = self._process_advantage_targets(targets, player)
             iterations = np.asarray([s.iteration for s in samples], dtype=np.float32).reshape(-1, 1)
             imp_weights = np.asarray([s.weight for s in samples], dtype=np.float32).reshape(-1, 1)
             imp_weights = np.clip(imp_weights, 0.0, 100.0)
@@ -604,6 +722,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             expl = float("nan")
         policy_diag = self._policy_network_diagnostics()
         advantage_diag = self._advantage_target_summary()
+        processed_advantage_diag = self._processed_advantage_target_diagnostics()
         baseline_diag = self._baseline_replay_summary()
         row = {
             "iteration": int(self._iteration),
@@ -638,6 +757,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         }
         row.update(policy_diag)
         row.update(advantage_diag)
+        row.update(processed_advantage_diag)
         row.update(baseline_diag)
         return row
 
@@ -683,6 +803,29 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "importance_weight_mean": safe_mean(weights),
             "importance_weight_std": safe_std(weights),
         }
+
+    def _processed_advantage_target_diagnostics(self) -> Dict[str, float]:
+        diagnostics = {}
+        for player in range(self._num_players):
+            diagnostics[f"processed_advantage_target_mean_player_{player}"] = float(
+                self._last_processed_advantage_target_mean[player]
+            )
+            diagnostics[f"processed_advantage_target_variance_player_{player}"] = float(
+                self._last_processed_advantage_target_variance[player]
+            )
+            diagnostics[f"processed_advantage_target_abs_mean_player_{player}"] = float(
+                self._last_processed_advantage_target_abs_mean[player]
+            )
+            diagnostics[f"target_standardization_mean_player_{player}"] = float(
+                self._last_target_standardization_mean[player]
+            )
+            diagnostics[f"target_standardization_scale_player_{player}"] = float(
+                self._last_target_standardization_scale[player]
+            )
+            diagnostics[f"target_clip_fraction_player_{player}"] = float(
+                self._last_target_clip_fraction[player]
+            )
+        return diagnostics
 
     def _baseline_replay_summary(self, max_samples_per_player: int = 5000) -> Dict[str, float]:
         rewards = []

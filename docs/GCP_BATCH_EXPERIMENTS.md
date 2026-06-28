@@ -653,6 +653,7 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 10: network-width ablation | `python -m experiments.leduc_poker.dream_network_size_ablation.run --output-root outputs/cloud/dream_network_width_ablation` |
 | Experiment 11: network-depth ablation | `python -m experiments.leduc_poker.dream_network_depth_ablation.run --output-root outputs/cloud/dream_network_depth_ablation` |
 | Experiment 12: capacity-extremes ablation | `python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run --output-root outputs/cloud/dream_network_capacity_extremes_ablation` |
+| Experiment 13: target-processing ablation | `python -m experiments.leduc_poker.dream_target_processing_ablation.run --output-root outputs/cloud/dream_target_processing_ablation` |
 
 Example:
 

@@ -74,7 +74,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_network_capacity_extremes_ablation/  # Experiment 12
+│       ├── dream_network_capacity_extremes_ablation/  # Experiment 12
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_target_processing_ablation/           # Experiment 13
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -191,6 +195,14 @@ Runs a matched-seed comparison of low-capacity `[16]`, baseline `[32, 32]`, and 
 
 **Question:** does DREAM benefit from substantially more representational capacity, or does the Leduc poker problem favour compact networks?
 
+### 13. DREAM advantage-target processing ablation
+
+[`experiments/leduc_poker/dream_target_processing_ablation/`](experiments/leduc_poker/dream_target_processing_ablation/README.md)
+
+Runs a matched-seed comparison of raw DREAM advantage targets, batch-standardized targets, clipped targets, and standardized-then-clipped targets. Replay buffers store raw sampled targets for every arm; processing is applied only to the supervised advantage-network loss.
+
+**Question:** can simple advantage-target processing reduce DREAM optimisation instability and improve final average-policy quality in Leduc poker?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -247,6 +259,9 @@ python -m experiments.leduc_poker.dream_network_depth_ablation.run
 
 # Experiment 12 — network-capacity extremes ablation
 python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run
+
+# Experiment 13 — advantage-target processing ablation
+python -m experiments.leduc_poker.dream_target_processing_ablation.run
 ```
 
 To run quick smoke tests for the network-architecture experiments on GCP, use
@@ -448,6 +463,20 @@ python -m experiments.leduc_poker.dream_trajectories_per_iteration_ablation.run 
   --evaluation-interval 5 \
   --variants traversals_80,traversals_160_exp_baseline \
   --output-root outputs/smoke_tests/dream_trajectories_per_iteration_ablation
+
+python -m experiments.leduc_poker.dream_target_processing_ablation.run \
+  --seeds 1234,2025 \
+  --iterations 10 \
+  --traversals 50 \
+  --policy-network-train-steps 20 \
+  --advantage-network-train-steps 20 \
+  --baseline-network-train-steps 20 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --evaluation-interval 5 \
+  --variants raw_targets_dream_baseline,standardized_clipped_targets \
+  --output-root outputs/smoke_tests/dream_target_processing_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).
@@ -615,6 +644,23 @@ plots/dream_trajectories_per_iteration_average_policy_value_by_iteration.png
 plots/dream_trajectories_per_iteration_average_policy_value_by_nodes.png
 plots/dream_trajectories_per_iteration_average_policy_value_by_sampled_trajectories.png
 plots/dream_trajectories_per_iteration_paired_sample_trajectory_auc_delta.png
+```
+
+Target-processing ablations additionally export:
+
+```text
+checkpoint_curves_by_variant.csv
+seed_variant_summary.csv
+aggregate_summary_by_variant.csv
+aggregate_summary_by_variant.json
+paired_differences_vs_baseline.csv
+paired_difference_summary.json
+multiseed_curves_by_variant.npz
+seed_<seed>/<variant>/checkpoint_curves.csv
+plots/dream_target_processing_exploitability_by_iteration.png
+plots/dream_target_processing_processed_advantage_target_variance.png
+plots/dream_target_processing_target_clip_fraction.png
+plots/dream_target_processing_paired_final_exploitability_delta.png
 ```
 
 ## Notes for adding future experiments
