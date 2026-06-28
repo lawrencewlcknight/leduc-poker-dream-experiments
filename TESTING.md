@@ -38,6 +38,12 @@ The recent DREAM ablations can be submitted together with:
 ./gcp/submit_recent_ablation_smoke_tests.sh
 ```
 
+To submit only the latest two DREAM ablations, use:
+
+```bash
+./gcp/submit_latest_ablation_smoke_tests.sh
+```
+
 ```bash
 python -m experiments.leduc_poker.dream_multiseed_baseline.run \
   --seeds 1234,2025 \

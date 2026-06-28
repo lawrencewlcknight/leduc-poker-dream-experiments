@@ -477,6 +477,15 @@ arguments used by the generic submitter:
 To preview the submissions without creating Batch jobs, run
 `DRY_RUN=1 ./gcp/submit_recent_ablation_smoke_tests.sh`.
 
+To submit only the latest two DREAM ablations, experiments 16 and 17, use:
+
+```bash
+./gcp/submit_latest_ablation_smoke_tests.sh
+```
+
+It accepts the same optional resource arguments and `DRY_RUN=1` preview mode as
+the recent-ablation helper.
+
 To smoke-test the network-architecture experiments, submit tiny Batch jobs for
 experiments 10, 11, and 12:
 

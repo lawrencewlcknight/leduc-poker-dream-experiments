@@ -335,6 +335,9 @@ the GCP environment variables from
 # Submit Experiments 13-17 together with one shared timestamp.
 ./gcp/submit_recent_ablation_smoke_tests.sh
 
+# Submit only Experiments 16-17 together with one shared timestamp.
+./gcp/submit_latest_ablation_smoke_tests.sh
+
 # Leduc Experiment 10 — network-width ablation smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
   "leduc-dream-exp10-width-smoke-$(date +%Y%m%d-%H%M%S)" \
