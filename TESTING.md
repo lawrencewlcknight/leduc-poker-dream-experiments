@@ -173,6 +173,17 @@ python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run \
   --baseline-network-train-steps 20 \
   --evaluation-interval 5 \
   --output-root outputs/smoke_tests/dream_network_capacity_extremes_ablation
+
+python -m experiments.leduc_poker.dream_residual_network_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants plain_layers2_width32,residual_layers2_width32 \
+  --output-root outputs/smoke_tests/dream_residual_network_ablation
 ```
 
 ## Full runs
@@ -191,6 +202,7 @@ python -m experiments.leduc_poker.dream_network_size_ablation.run
 python -m experiments.leduc_poker.dream_network_depth_ablation.run
 python -m experiments.leduc_poker.dream_network_capacity_extremes_ablation.run
 python -m experiments.leduc_poker.dream_target_processing_ablation.run
+python -m experiments.leduc_poker.dream_residual_network_ablation.run
 ```
 
 The full runs can be computationally expensive. Use the smoke tests first after making code changes.

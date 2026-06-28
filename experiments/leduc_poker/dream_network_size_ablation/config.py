@@ -12,6 +12,9 @@ from dream_poker.constants import (
 )
 
 
+BASELINE_VARIANT = "arch_2x32_exp_baseline"
+
+
 def network_variant(
     variant_id: str,
     label: str,
@@ -47,6 +50,10 @@ EXPERIMENT_CONFIG = {
     "policy_network_layers": [32, 32],
     "advantage_network_layers": [32, 32],
     "baseline_network_layers": [32, 32],
+    "policy_network_type": "mlp",
+    "advantage_network_type": "mlp",
+    "baseline_network_type": "mlp",
+    "network_treatment": "mlp",
     "learning_rate": 0.003,
     "batch_size_advantage": 1024,
     "batch_size_strategy": 1024,
@@ -65,11 +72,9 @@ EXPERIMENT_CONFIG = {
     "exploitability_threshold": EXPLOITABILITY_THRESHOLD,
     "plot_prefix": "dream_network_width",
     "plot_title": "DREAM Network-Width Ablation",
+    "baseline_variant": BASELINE_VARIANT,
     "output_root": Path("outputs") / "dream_network_width_ablation",
 }
-
-
-BASELINE_VARIANT = "arch_2x32_exp_baseline"
 
 
 NETWORK_SIZE_VARIANTS = [

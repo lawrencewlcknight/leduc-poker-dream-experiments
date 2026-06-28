@@ -25,7 +25,7 @@ except Exception:  # pragma: no cover
 
 from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET, LEDUC_GAME_VALUE_P0
 from dream_poker.experiment_utils import ensure_dir
-from dream_poker.networks import MLP
+from dream_poker.networks import build_network
 from dream_poker.plotting import (
     add_average_policy_value_target,
     add_nash_exploitability_target,
@@ -52,7 +52,8 @@ class LoadedDREAMPolicy(osp_policy.Policy if osp_policy is not None else object)
         except TypeError:
             snapshot = torch.load(self.path, map_location=map_location)
         input_size, hidden_sizes, output_size = infer_architecture_from_snapshot(snapshot)
-        self.network = MLP(input_size, hidden_sizes, output_size)
+        network_type = str(snapshot.get("policy_network_type", "mlp"))
+        self.network = build_network(network_type, input_size, hidden_sizes, output_size)
         self.network.load_state_dict(snapshot["policy_network_state_dict"])
         self.network.eval()
         self.iteration_inside_checkpoint = int(snapshot.get("checkpoint_iteration", -1))
@@ -94,6 +95,7 @@ def save_dream_policy_snapshot(solver, seed: int, checkpoint_iteration: int, out
             "nodes_touched": int(solver._nodes_touched),
             "game_name": config["game_name"],
             "policy_network_state_dict": solver._policy_network.state_dict(),
+            "policy_network_type": solver._policy_network_type,
             "policy_network_layers": list(solver._policy_network_layers),
             "info_state_size": int(solver._info_state_size),
             "num_actions": int(solver._num_actions),
@@ -120,6 +122,9 @@ def save_optional_full_checkpoint(
             "kind": "dream_full_checkpoint",
             "seed": int(seed),
             "checkpoint_iteration": int(checkpoint_iteration),
+            "policy_network_type": solver._policy_network_type,
+            "advantage_network_type": solver._advantage_network_type,
+            "baseline_network_type": solver._baseline_network_type,
             "policy_network_state_dict": solver._policy_network.state_dict(),
             "advantage_network_state_dicts": [n.state_dict() for n in solver._advantage_networks],
             "baseline_network_state_dicts": [n.state_dict() for n in solver._baseline_networks],

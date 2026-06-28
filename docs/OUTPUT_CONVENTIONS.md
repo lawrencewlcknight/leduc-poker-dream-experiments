@@ -199,6 +199,25 @@ Trajectories-per-iteration variant columns should remain stable:
 - `delta_exploitability_auc_by_nodes`
 - `delta_exploitability_auc_by_sampled_trajectories`
 
+Architecture-treatment variant columns should remain stable:
+
+- `variant`
+- `variant_label`
+- `network_treatment`
+- `network_architecture`
+- `network_depth`
+- `network_max_width`
+- `network_hidden_units`
+- `policy_network_type`
+- `advantage_network_type`
+- `baseline_network_type`
+- `policy_network_parameters`
+- `advantage_network_parameters_per_player`
+- `baseline_network_parameters_per_player`
+- `total_network_parameters`
+- `delta_final_exploitability`
+- `delta_exploitability_auc_by_nodes`
+
 Target-processing variant columns should remain stable:
 
 - `variant`

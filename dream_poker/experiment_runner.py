@@ -72,8 +72,11 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
     game = pyspiel.load_game(config["game_name"])
     return DREAMSolver(
         game=game,
+        policy_network_type=config.get("policy_network_type", "mlp"),
         policy_network_layers=config["policy_network_layers"],
+        advantage_network_type=config.get("advantage_network_type", "mlp"),
         advantage_network_layers=config["advantage_network_layers"],
+        baseline_network_type=config.get("baseline_network_type", "mlp"),
         baseline_network_layers=config["baseline_network_layers"],
         num_iterations=config["num_iterations"],
         num_traversals=config["num_traversals"],

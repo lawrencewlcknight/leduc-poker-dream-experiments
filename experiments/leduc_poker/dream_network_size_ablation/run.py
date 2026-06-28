@@ -36,10 +36,14 @@ from .config import BASELINE_VARIANT, EXPERIMENT_CONFIG, NETWORK_SIZE_VARIANT_SE
 
 
 TREATMENT_KEYS = [
+    "network_treatment",
     "network_architecture",
     "network_depth",
     "network_max_width",
     "network_hidden_units",
+    "policy_network_type",
+    "advantage_network_type",
+    "baseline_network_type",
 ]
 PARAMETER_COUNT_COLUMNS = [
     "policy_network_parameters",
@@ -102,6 +106,9 @@ def summarise_network_size_curve(
     summary["policy_network_layers"] = list(config["policy_network_layers"])
     summary["advantage_network_layers"] = list(config["advantage_network_layers"])
     summary["baseline_network_layers"] = list(config["baseline_network_layers"])
+    summary["policy_network_type"] = str(config.get("policy_network_type", "mlp"))
+    summary["advantage_network_type"] = str(config.get("advantage_network_type", "mlp"))
+    summary["baseline_network_type"] = str(config.get("baseline_network_type", "mlp"))
     return summary
 
 
@@ -141,7 +148,8 @@ def run_experiment(
     variants: Sequence[Dict] = NETWORK_SIZE_VARIANTS,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Path]:
     output_dir = create_timestamped_output_dir(config["output_root"])
-    metadata = {**config, "variants": list(variants), "baseline_variant": BASELINE_VARIANT}
+    baseline_variant = str(config.get("baseline_variant", BASELINE_VARIANT))
+    metadata = {**config, "variants": list(variants), "baseline_variant": baseline_variant}
     write_json(output_dir / "experiment_metadata.json", json_ready(metadata))
 
     all_curves = []
@@ -155,7 +163,7 @@ def run_experiment(
 
     curves_df = pd.concat(all_curves, ignore_index=True)
     summary_df = pd.DataFrame(summaries)
-    paired_df = build_paired_differences(summary_df, BASELINE_VARIANT, PAIRED_METRICS)
+    paired_df = build_paired_differences(summary_df, baseline_variant, PAIRED_METRICS)
     aggregate_df = aggregate_variant_summary(summary_df, AGGREGATE_METRICS, TREATMENT_KEYS)
 
     curves_df.to_csv(output_dir / "checkpoint_curves_by_variant.csv", index=False)

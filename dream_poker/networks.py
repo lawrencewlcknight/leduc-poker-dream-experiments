@@ -36,3 +36,52 @@ class MLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
+
+
+class ResidualHiddenLayer(nn.Module):
+    """Hidden layer with a same-width residual connection when dimensions match."""
+
+    def __init__(self, in_size: int, out_size: int):
+        super().__init__()
+        self.linear = SonnetLinear(in_size, out_size)
+        self.activation = nn.ReLU()
+        self.use_residual = int(in_size) == int(out_size)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = self.activation(self.linear(x))
+        if self.use_residual:
+            out = out + x
+        return out
+
+
+class ResidualMLP(nn.Module):
+    """MLP with residual connections between same-width hidden layers."""
+
+    def __init__(self, input_size: int, hidden_sizes: Sequence[int], output_size: int):
+        super().__init__()
+        hidden_sizes = list(map(int, hidden_sizes))
+        layers: List[nn.Module] = []
+        in_size = int(input_size)
+        for hidden_size in hidden_sizes:
+            layers.append(ResidualHiddenLayer(in_size, hidden_size))
+            in_size = hidden_size
+        layers.append(SonnetLinear(in_size, int(output_size)))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+def build_network(
+    network_type: str,
+    input_size: int,
+    hidden_sizes: Sequence[int],
+    output_size: int,
+) -> nn.Module:
+    """Build a DREAM network implementation by type."""
+    network_type = str(network_type).lower()
+    if network_type == "mlp":
+        return MLP(input_size, hidden_sizes, output_size)
+    if network_type == "residual_mlp":
+        return ResidualMLP(input_size, hidden_sizes, output_size)
+    raise ValueError("network_type must be one of ['mlp', 'residual_mlp']")

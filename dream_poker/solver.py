@@ -30,7 +30,7 @@ except Exception:  # pragma: no cover - OpenSpiel may not be installed in all en
 
 from dream_poker.constants import LEDUC_AVERAGE_POLICY_VALUE_TARGET, LEDUC_GAME_VALUE_P0
 from dream_poker.experiment_utils import grad_norm, safe_mean, safe_std
-from dream_poker.networks import MLP
+from dream_poker.networks import build_network
 from dream_poker.replay import (
     BaselineTransition,
     CircularReplay,
@@ -61,8 +61,11 @@ class DREAMSolver(policy.Policy if policy is not None else object):
     def __init__(
         self,
         game,
+        policy_network_type: str = "mlp",
         policy_network_layers: Sequence[int] = (32, 32),
+        advantage_network_type: str = "mlp",
         advantage_network_layers: Sequence[int] = (32, 32),
+        baseline_network_type: str = "mlp",
         baseline_network_layers: Optional[Sequence[int]] = None,
         num_iterations: int = 500,
         num_traversals: int = 320,
@@ -98,6 +101,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._num_actions = int(game.num_distinct_actions())
         self._info_state_size = int(game.information_state_tensor_shape()[0])
 
+        self._policy_network_type = str(policy_network_type).lower()
+        self._advantage_network_type = str(advantage_network_type).lower()
+        self._baseline_network_type = str(baseline_network_type).lower()
         self._policy_network_layers = tuple(policy_network_layers)
         self._advantage_network_layers = tuple(advantage_network_layers)
         self._baseline_network_layers = tuple(baseline_network_layers or advantage_network_layers)
@@ -147,16 +153,31 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         if seed is not None:
             set_seed(seed)
 
-        self._policy_network = MLP(self._info_state_size, self._policy_network_layers, self._num_actions)
+        self._policy_network = build_network(
+            self._policy_network_type,
+            self._info_state_size,
+            self._policy_network_layers,
+            self._num_actions,
+        )
         self._policy_softmax = nn.Softmax(dim=-1)
         self._optimizer_policy = torch.optim.Adam(self._policy_network.parameters(), lr=self._learning_rate)
 
         self._advantage_networks = [
-            MLP(self._info_state_size, self._advantage_network_layers, self._num_actions)
+            build_network(
+                self._advantage_network_type,
+                self._info_state_size,
+                self._advantage_network_layers,
+                self._num_actions,
+            )
             for _ in range(self._num_players)
         ]
         self._baseline_networks = [
-            MLP(self._info_state_size, self._baseline_network_layers, self._num_actions)
+            build_network(
+                self._baseline_network_type,
+                self._info_state_size,
+                self._baseline_network_layers,
+                self._num_actions,
+            )
             for _ in range(self._num_players)
         ]
         self._optimizer_advantages = [
@@ -336,6 +357,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "target_processing": self._target_processing,
             "target_clip_value": float(self._target_clip_value),
             "target_standardize_epsilon": float(self._target_standardize_epsilon),
+            "policy_network_type": self._policy_network_type,
+            "advantage_network_type": self._advantage_network_type,
+            "baseline_network_type": self._baseline_network_type,
             "policy_network": self._policy_network.state_dict(),
             "optimizer_policy": self._optimizer_policy.state_dict(),
             "advantage_networks": [net.state_dict() for net in self._advantage_networks],
@@ -403,6 +427,15 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 "target_standardize_epsilon",
                 self._target_standardize_epsilon,
             )
+        )
+        self._policy_network_type = str(
+            state.get("policy_network_type", self._policy_network_type)
+        )
+        self._advantage_network_type = str(
+            state.get("advantage_network_type", self._advantage_network_type)
+        )
+        self._baseline_network_type = str(
+            state.get("baseline_network_type", self._baseline_network_type)
         )
 
         self._policy_network.load_state_dict(state["policy_network"])
