@@ -19,6 +19,7 @@ from dream_poker.experiment_utils import (
     standard_error,
 )
 from dream_poker.plotting import (
+    _mean_curve,
     add_average_policy_value_target,
     add_nash_exploitability_target,
     format_plot_title,
@@ -263,15 +264,11 @@ def plot_arm_curves(
         arm_df = curves_df[curves_df["arm"] == arm]
         if arm_df.empty:
             continue
-        grouped = arm_df.groupby(x_col)[metric]
-        mean = grouped.mean()
-        se = grouped.sem().fillna(0.0)
-        x = mean.index.to_numpy(dtype=float)
-        y = mean.to_numpy(dtype=float)
-        se_y = se.to_numpy(dtype=float)
+        x, y, se_y = _mean_curve(arm_df, x_col, metric)
         ax.plot(x, y, linewidth=2.1, label=arm)
         ax.fill_between(x, y - se_y, y + se_y, alpha=0.16)
         for _, seed_df in arm_df.groupby("seed"):
+            seed_df = seed_df.sort_values(x_col)
             ax.plot(seed_df[x_col], seed_df[metric], linewidth=0.6, alpha=0.16)
     if is_exploitability_metric(metric):
         add_nash_exploitability_target(ax)

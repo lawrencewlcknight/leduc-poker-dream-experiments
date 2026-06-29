@@ -51,6 +51,30 @@ def test_mean_exploitability_curve_has_single_nash_target_line():
     plt.close(fig)
 
 
+def test_node_axis_mean_curve_aligns_by_checkpoint_iteration():
+    curves_df = pd.DataFrame(
+        {
+            "seed": [1, 1, 2, 2],
+            "iteration": [25, 50, 25, 50],
+            "nodes_touched": [100, 200, 110, 210],
+            "exploitability": [0.3, 0.1, 0.2, 0.15],
+        }
+    )
+
+    fig, ax = plot_mean_curve(
+        curves_df,
+        "nodes_touched",
+        "exploitability",
+        "Exploitability",
+        "Exploitability",
+    )
+
+    mean_line = next(line for line in ax.lines if line.get_label() == "Mean across seeds")
+    assert list(mean_line.get_xdata()) == [105.0, 205.0]
+    assert list(mean_line.get_ydata()) == pytest.approx([0.25, 0.125])
+    plt.close(fig)
+
+
 def test_non_exploitability_curve_has_no_nash_target_line():
     curves_df = pd.DataFrame(
         {

@@ -20,6 +20,7 @@ from dream_poker.experiment_utils import (
     standard_error,
 )
 from dream_poker.plotting import (
+    _mean_curve,
     add_average_policy_value_target,
     add_nash_exploitability_target,
     format_plot_title,
@@ -320,13 +321,9 @@ def plot_variant_mean_curve(
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for variant, variant_df in curves_df.groupby("variant"):
         for _, seed_df in variant_df.groupby("seed"):
+            seed_df = seed_df.sort_values(x_col)
             ax.plot(seed_df[x_col], seed_df[y_col], linewidth=0.75, alpha=0.18)
-        grouped = variant_df.groupby(x_col)[y_col]
-        mean = grouped.mean()
-        se = grouped.sem().fillna(0.0)
-        x = mean.index.to_numpy(dtype=float)
-        y = mean.to_numpy(dtype=float)
-        se_y = se.to_numpy(dtype=float)
+        x, y, se_y = _mean_curve(variant_df, x_col, y_col)
         ax.plot(x, y, linewidth=2.2, label=variant)
         ax.fill_between(x, y - se_y, y + se_y, alpha=0.14)
     if is_exploitability_metric(y_col):

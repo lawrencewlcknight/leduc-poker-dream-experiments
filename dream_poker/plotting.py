@@ -111,6 +111,22 @@ def add_average_policy_value_target(
         raise ValueError("axis must be 'x' or 'y'.")
 
 
+def _mean_curve(curves_df: pd.DataFrame, x_col: str, y_col: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return checkpoint-aligned mean x, mean y, and s.e. for plotting."""
+    if x_col == "nodes_touched" and "iteration" in curves_df.columns:
+        grouped = curves_df.groupby("iteration", sort=True)
+        x = grouped[x_col].mean().to_numpy(dtype=float)
+        mean = grouped[y_col].mean().to_numpy(dtype=float)
+        se = grouped[y_col].sem().fillna(0.0).to_numpy(dtype=float)
+    else:
+        grouped = curves_df.groupby(x_col, sort=True)[y_col]
+        mean_series = grouped.mean()
+        x = mean_series.index.to_numpy(dtype=float)
+        mean = mean_series.to_numpy(dtype=float)
+        se = grouped.sem().fillna(0.0).to_numpy(dtype=float)
+    return x, mean, se
+
+
 def plot_mean_curve(
     curves_df: pd.DataFrame,
     x_col: str,
@@ -124,13 +140,9 @@ def plot_mean_curve(
 ):
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
     for seed, seed_df in curves_df.groupby("seed"):
+        seed_df = seed_df.sort_values(x_col)
         ax.plot(seed_df[x_col], seed_df[y_col], linewidth=0.9, alpha=0.28)
-    grouped = curves_df.groupby(x_col)[y_col]
-    mean = grouped.mean()
-    se = grouped.sem().fillna(0.0)
-    x = mean.index.to_numpy(dtype=float)
-    y = mean.to_numpy(dtype=float)
-    se_y = se.to_numpy(dtype=float)
+    x, y, se_y = _mean_curve(curves_df, x_col, y_col)
     ax.plot(x, y, linewidth=2.2, label="Mean across seeds")
     ax.fill_between(x, y - se_y, y + se_y, alpha=0.18, label="±1 s.e.")
     if is_exploitability_metric(y_col):
@@ -262,13 +274,9 @@ def plot_curve_by_variant(
         if vdf.empty:
             continue
         for _, seed_df in vdf.groupby("seed"):
+            seed_df = seed_df.sort_values(x_col)
             ax.plot(seed_df[x_col], seed_df[y_col], linewidth=0.8, alpha=0.18)
-        grouped = vdf.groupby(x_col)[y_col]
-        mean = grouped.mean()
-        se = grouped.sem().fillna(0.0)
-        x = mean.index.to_numpy(dtype=float)
-        y = mean.to_numpy(dtype=float)
-        se_y = se.to_numpy(dtype=float)
+        x, y, se_y = _mean_curve(vdf, x_col, y_col)
         ax.plot(
             x,
             y,

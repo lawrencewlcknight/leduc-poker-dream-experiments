@@ -27,6 +27,7 @@ from dream_poker.experiment_runner import (
 from dream_poker.experiment_utils import cleanup_training_memory, compute_auc, ensure_dir, safe_mean, standard_error
 from dream_poker.experiment_utils import ensure_average_policy_value_columns
 from dream_poker.plotting import (
+    _mean_curve,
     add_average_policy_value_target,
     add_nash_exploitability_target,
     format_plot_title,
@@ -566,12 +567,7 @@ def _plot_grouped_curve(
 ) -> Path:
     fig, ax = plt.subplots(figsize=(9, 5.2))
     for label, group in curves_df.groupby("config_label"):
-        grouped = group.groupby(x_col)[y_col]
-        mean = grouped.mean()
-        se = grouped.sem().fillna(0.0)
-        x = mean.index.to_numpy(dtype=float)
-        y = mean.to_numpy(dtype=float)
-        e = se.to_numpy(dtype=float)
+        x, y, e = _mean_curve(group, x_col, y_col)
         ax.plot(x, y, linewidth=2.0, label=label)
         ax.fill_between(x, y - e, y + e, alpha=0.12)
     if is_exploitability_metric(y_col):
