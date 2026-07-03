@@ -86,6 +86,7 @@ export TMPDIR="/tmp"
 export PIP_CACHE_DIR="/tmp/pip-cache"
 export MPLCONFIGDIR="/tmp/matplotlib-cache"
 export UV_CACHE_DIR="/tmp/uv-cache"
+export PYTHONUNBUFFERED=1
 export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 
 mkdir -p "$HOME" "$TMPDIR" "$PIP_CACHE_DIR" "$MPLCONFIGDIR" "$UV_CACHE_DIR"

@@ -3,7 +3,9 @@ set -euo pipefail
 
 # Submit GCP Batch smoke tests for the latest DREAM ablations:
 #   Experiment 16: factorised advantage heads
-#   Experiment 17: layer-normalisation networks
+#   Experiment 17: plain-network depth reference
+#   Experiment 18: LayerNorm networks
+#   Experiment 19: residual-LayerNorm networks
 #
 # Required environment variables are inherited from submit_batch_experiment.sh:
 #   PROJECT_ID, REGION, BUCKET, SA_EMAIL
@@ -55,5 +57,13 @@ submit_smoke_test \
   "python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 --output-root outputs/cloud/smoke/leduc_dream_factorised_advantage_head_ablation"
 
 submit_smoke_test \
-  "leduc-dream-exp17-layer-norm-smoke-${RUN_ID}" \
-  "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 --output-root outputs/cloud/smoke/leduc_dream_layer_norm_network_ablation"
+  "leduc-dream-exp17-plain-depth-smoke-${RUN_ID}" \
+  "python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants plain_layers2_width32,plain_layers4_width32 --output-root outputs/cloud/smoke/leduc_dream_plain_network_depth_ablation"
+
+submit_smoke_test \
+  "leduc-dream-exp18-layer-norm-smoke-${RUN_ID}" \
+  "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants plain_layers2_width32,layer_norm_layers2_width32 --output-root outputs/cloud/smoke/leduc_dream_layer_norm_network_ablation"
+
+submit_smoke_test \
+  "leduc-dream-exp19-residual-layer-norm-smoke-${RUN_ID}" \
+  "python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run --seeds 1234 --iterations 3 --traversals 4 --evaluation-interval 1 --policy-network-train-steps 1 --advantage-network-train-steps 1 --baseline-network-train-steps 1 --variants plain_layers2_width32,residual_layer_norm_layers2_width32 --output-root outputs/cloud/smoke/leduc_dream_residual_layer_norm_network_ablation"

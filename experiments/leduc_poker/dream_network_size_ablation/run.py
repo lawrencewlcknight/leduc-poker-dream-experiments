@@ -156,7 +156,7 @@ def run_experiment(
     summaries = []
     for variant in variants:
         for seed in config["seeds"]:
-            print(f"Running {get_variant_id(variant)} seed {seed}...")
+            print(f"Running {get_variant_id(variant)} seed {seed}...", flush=True)
             curves, summary = run_single_variant_seed(variant, int(seed), config, output_dir)
             all_curves.append(curves)
             summaries.append(summary)
@@ -186,7 +186,7 @@ def run_experiment(
     )
 
     make_plots(curves_df, summary_df, paired_df, variants, output_dir, config)
-    print(f"Outputs written to {output_dir}")
+    print(f"Outputs written to {output_dir}", flush=True)
     return curves_df, summary_df, paired_df, output_dir
 
 

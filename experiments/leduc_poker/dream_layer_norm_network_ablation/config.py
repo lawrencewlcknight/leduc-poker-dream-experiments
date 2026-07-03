@@ -53,13 +53,51 @@ LAYER_NORM_NETWORK_VARIANTS = [
 ]
 
 
+LAYER_NORM_NETWORK_VARIANT_SETS = {
+    "all": [variant["variant_id"] for variant in LAYER_NORM_NETWORK_VARIANTS],
+    "plain": [
+        "plain_layers2_width32",
+        "plain_layers4_width32",
+        "plain_layers8_width32",
+    ],
+    "layer_norm": [
+        BASELINE_VARIANT,
+        "layer_norm_layers2_width32",
+        "layer_norm_layers4_width32",
+        "layer_norm_layers8_width32",
+    ],
+    "residual_layer_norm": [
+        BASELINE_VARIANT,
+        "residual_layer_norm_layers2_width32",
+        "residual_layer_norm_layers4_width32",
+        "residual_layer_norm_layers8_width32",
+    ],
+}
+
+
+def select_layer_norm_network_variants(variant_ids: list[str]) -> list[dict]:
+    """Return configured variants in the requested order."""
+    variants_by_id = {
+        variant["variant_id"]: variant for variant in LAYER_NORM_NETWORK_VARIANTS
+    }
+    missing = [variant_id for variant_id in variant_ids if variant_id not in variants_by_id]
+    if missing:
+        raise ValueError(f"Unknown layer-normalisation variant ids: {missing}")
+    return [variants_by_id[variant_id] for variant_id in variant_ids]
+
+
+LAYER_NORM_EXPERIMENT_VARIANTS = select_layer_norm_network_variants(
+    LAYER_NORM_NETWORK_VARIANT_SETS["layer_norm"]
+)
+
+
 EXPERIMENT_CONFIG = copy.deepcopy(NETWORK_EXPERIMENT_CONFIG)
 EXPERIMENT_CONFIG.update(
     {
         "experiment_name": "leduc_poker_dream_layer_norm_network_ablation",
-        "algorithm": "DREAM-style OpenSpiel layer-normalisation network ablation",
+        "algorithm": "DREAM-style OpenSpiel LayerNorm-network ablation",
         "plot_prefix": "dream_layer_norm_network",
-        "plot_title": "DREAM Layer-Normalisation Network Ablation",
+        "plot_title": "DREAM LayerNorm-Network Ablation",
         "baseline_variant": BASELINE_VARIANT,
         "output_root": Path("outputs") / "dream_layer_norm_network_ablation",
     }

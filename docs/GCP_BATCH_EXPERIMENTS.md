@@ -616,7 +616,24 @@ The individual commands used by the newest-ablation helper are:
   "16000"
 
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp17-layer-norm-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp17-plain-depth-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants plain_layers2_width32,plain_layers4_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_plain_network_depth_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp18-layer-norm-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
     --seeds 1234 \
     --iterations 3 \
@@ -625,8 +642,25 @@ The individual commands used by the newest-ablation helper are:
     --advantage-network-train-steps 1 \
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
-    --variants plain_layers2_width32,layer_norm_layers2_width32,residual_layer_norm_layers2_width32 \
+    --variants plain_layers2_width32,layer_norm_layers2_width32 \
     --output-root outputs/cloud/smoke/leduc_dream_layer_norm_network_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp19-residual-layer-norm-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants plain_layers2_width32,residual_layer_norm_layers2_width32 \
+    --output-root outputs/cloud/smoke/leduc_dream_residual_layer_norm_network_ablation" \
   "n2-standard-4" \
   "3600" \
   "4000" \
@@ -778,7 +812,9 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 14: residual-network ablation | `python -m experiments.leduc_poker.dream_residual_network_ablation.run --output-root outputs/cloud/dream_residual_network_ablation` |
 | Experiment 15: average-strategy weighting ablation | `python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run --output-root outputs/cloud/dream_average_strategy_weighting_ablation` |
 | Experiment 16: factorised advantage-head ablation | `python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run --output-root outputs/cloud/dream_factorised_advantage_head_ablation` |
-| Experiment 17: layer-normalisation network ablation | `python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --output-root outputs/cloud/dream_layer_norm_network_ablation` |
+| Experiment 17: plain-network depth reference ablation | `python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run --output-root outputs/cloud/dream_plain_network_depth_ablation` |
+| Experiment 18: LayerNorm-network ablation | `python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --output-root outputs/cloud/dream_layer_norm_network_ablation` |
+| Experiment 19: residual-LayerNorm network ablation | `python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run --output-root outputs/cloud/dream_residual_layer_norm_network_ablation` |
 
 Example:
 
@@ -823,6 +859,40 @@ module as its own job:
   "172800" \
   "4000" \
   "16000"
+```
+
+The former single-task layer-normalisation grid has been decomposed into three
+first-class experiments. This avoids a serial 27-run Batch task and gives each
+comparison its own job name, experiment number, output root, and smoke test.
+Submit the three modules independently:
+
+```bash
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp17-plain-depth-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run \
+    --output-root outputs/cloud/dream_plain_network_depth_ablation" \
+  "n2-standard-8" \
+  "259200" \
+  "8000" \
+  "32000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp18-layer-norm-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run \
+    --output-root outputs/cloud/dream_layer_norm_network_ablation" \
+  "n2-standard-8" \
+  "259200" \
+  "8000" \
+  "32000"
+
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp19-residual-layer-norm-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run \
+    --output-root outputs/cloud/dream_residual_layer_norm_network_ablation" \
+  "n2-standard-8" \
+  "259200" \
+  "8000" \
+  "32000"
 ```
 
 ---

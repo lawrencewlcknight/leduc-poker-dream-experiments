@@ -1,4 +1,4 @@
-"""Run the DREAM layer-normalisation network ablation."""
+"""Run the DREAM plain-network depth reference ablation."""
 
 from __future__ import annotations
 
@@ -13,10 +13,7 @@ from experiments.leduc_poker.dream_network_size_ablation.run import (
     run_experiment,
 )
 
-from .config import (
-    EXPERIMENT_CONFIG,
-    LAYER_NORM_EXPERIMENT_VARIANTS,
-)
+from .config import EXPERIMENT_CONFIG, PLAIN_NETWORK_DEPTH_VARIANTS
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,7 +28,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def variants_from_args(args: argparse.Namespace) -> list[Dict]:
-    variants = copy.deepcopy(LAYER_NORM_EXPERIMENT_VARIANTS)
+    variants = copy.deepcopy(PLAIN_NETWORK_DEPTH_VARIANTS)
     if not args.variants:
         return variants
     requested = {value.strip() for value in args.variants.split(",") if value.strip()}
