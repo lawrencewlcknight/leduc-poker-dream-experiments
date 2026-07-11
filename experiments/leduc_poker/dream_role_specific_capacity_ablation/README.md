@@ -1,4 +1,4 @@
-# DREAM role-specific capacity ablation
+# DREAM role-specific capacity ablation (Experiment 20)
 
 This experiment tests whether DREAM benefits more from concentrating extra capacity in
 the advantage networks than from scaling every network family together.

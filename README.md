@@ -94,10 +94,6 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       ├── dream_role_specific_capacity_ablation/      # Architecture follow-up
-│       │   ├── config.py
-│       │   ├── run.py
-│       │   └── README.md
 │       ├── dream_plain_network_depth_ablation/         # Experiment 17
 │       │   ├── config.py
 │       │   ├── run.py
@@ -106,7 +102,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_residual_layer_norm_network_ablation/ # Experiment 19
+│       ├── dream_residual_layer_norm_network_ablation/ # Experiment 19
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_role_specific_capacity_ablation/      # Experiment 20
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -255,14 +255,6 @@ Holds the average-policy and learned-baseline networks fixed at the baseline `2x
 
 **Question:** does imposing a value/advantage factorisation on the DREAM advantage approximator improve optimisation stability or final average-policy quality?
 
-### DREAM role-specific capacity follow-up
-
-[`experiments/leduc_poker/dream_role_specific_capacity_ablation/`](experiments/leduc_poker/dream_role_specific_capacity_ablation/README.md)
-
-Tests whether the modest gains from the `3x64` architecture are driven mainly by the player-specific advantage networks. The policy and baseline networks remain fixed at `2x32` in the advantage-only arms, which are compared with matched `2x32` and all-network `3x64` references.
-
-**Question:** can DREAM improve more efficiently by assigning extra capacity to advantage estimation rather than scaling every network family together?
-
 ### 17. DREAM plain-network depth reference ablation
 
 [`experiments/leduc_poker/dream_plain_network_depth_ablation/`](experiments/leduc_poker/dream_plain_network_depth_ablation/README.md)
@@ -294,6 +286,14 @@ MLPs at fixed width `32` and hidden depths `2`, `4`, and `8`.
 
 **Question:** does combining residual hidden blocks with LayerNorm improve
 DREAM optimisation stability or final average-policy quality?
+
+### 20. DREAM role-specific capacity ablation
+
+[`experiments/leduc_poker/dream_role_specific_capacity_ablation/`](experiments/leduc_poker/dream_role_specific_capacity_ablation/README.md)
+
+Tests whether the modest gains from the `3x64` architecture are driven mainly by the player-specific advantage networks. The policy and baseline networks remain fixed at `2x32` in the advantage-only arms, which are compared with matched `2x32` and all-network `3x64` references.
+
+**Question:** can DREAM improve more efficiently by assigning extra capacity to advantage estimation rather than scaling every network family together?
 
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
@@ -364,9 +364,6 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
 # Experiment 16 — factorised advantage-head ablation
 python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
 
-# Architecture follow-up — role-specific capacity ablation
-python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run
-
 # Experiment 17 — plain-network depth reference ablation
 python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run
 
@@ -375,6 +372,9 @@ python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run
 
 # Experiment 19 — residual-LayerNorm network ablation
 python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run
+
+# Experiment 20 — role-specific capacity ablation
+python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run
 ```
 
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
@@ -572,6 +572,24 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 20 — role-specific capacity ablation smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp20-role-capacity-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
+    --output-root outputs/cloud/smoke/leduc_dream_role_specific_capacity_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -650,17 +668,6 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
   --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
   --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
 
-python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
-  --seeds 1234 \
-  --iterations 3 \
-  --traversals 4 \
-  --policy-network-train-steps 1 \
-  --advantage-network-train-steps 1 \
-  --baseline-network-train-steps 1 \
-  --evaluation-interval 1 \
-  --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
-  --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
-
 python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run \
   --seeds 1234 \
   --iterations 3 \
@@ -693,6 +700,18 @@ python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run
   --evaluation-interval 1 \
   --variants plain_layers2_width32,residual_layer_norm_layers2_width32 \
   --output-root outputs/smoke_tests/dream_residual_layer_norm_network_ablation
+
+# Leduc Experiment 20 — role-specific capacity ablation smoke test
+python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
+  --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
 ```
 
 For local smoke tests across all experiments:
@@ -843,17 +862,6 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run \
   --variants direct_advantage_layers2_width32,centered_advantage_layers2_width32,dueling_advantage_layers2_width32 \
   --output-root outputs/smoke_tests/dream_factorised_advantage_head_ablation
 
-python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
-  --seeds 1234 \
-  --iterations 3 \
-  --traversals 4 \
-  --policy-network-train-steps 1 \
-  --advantage-network-train-steps 1 \
-  --baseline-network-train-steps 1 \
-  --evaluation-interval 1 \
-  --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
-  --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
-
 python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run \
   --seeds 1234 \
   --iterations 3 \
@@ -886,6 +894,18 @@ python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run
   --evaluation-interval 1 \
   --variants plain_layers2_width32,residual_layer_norm_layers2_width32 \
   --output-root outputs/smoke_tests/dream_residual_layer_norm_network_ablation
+
+# Leduc Experiment 20 — role-specific capacity ablation smoke test
+python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
+  --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).

@@ -815,6 +815,7 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 17: plain-network depth reference ablation | `python -m experiments.leduc_poker.dream_plain_network_depth_ablation.run --output-root outputs/cloud/dream_plain_network_depth_ablation` |
 | Experiment 18: LayerNorm-network ablation | `python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run --output-root outputs/cloud/dream_layer_norm_network_ablation` |
 | Experiment 19: residual-LayerNorm network ablation | `python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run --output-root outputs/cloud/dream_residual_layer_norm_network_ablation` |
+| Experiment 20: role-specific capacity ablation | `python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run --output-root outputs/cloud/dream_role_specific_capacity_ablation` |
 
 Example:
 
