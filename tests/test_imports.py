@@ -31,6 +31,7 @@ def test_import_experiment_configs():
     import experiments.leduc_poker.dream_plain_network_depth_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_residual_layer_norm_network_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_residual_network_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_role_specific_capacity_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_target_processing_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_trajectories_per_iteration_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_warm_start_ablation.config  # noqa: F401
