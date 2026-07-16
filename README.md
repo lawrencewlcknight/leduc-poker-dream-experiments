@@ -106,7 +106,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_role_specific_capacity_ablation/      # Experiment 20
+│       ├── dream_role_specific_capacity_ablation/      # Experiment 20
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_parallel_equivalence_ablation/        # Experiment 21
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -295,6 +299,14 @@ Tests whether the modest gains from the `3x64` architecture are driven mainly by
 
 **Question:** can DREAM improve more efficiently by assigning extra capacity to advantage estimation rather than scaling every network family together?
 
+### 21. DREAM sequential/parallel equivalence ablation
+
+[`experiments/leduc_poker/dream_parallel_equivalence_ablation/`](experiments/leduc_poker/dream_parallel_equivalence_ablation/README.md)
+
+Compares the current best documented DREAM configuration, uniform `3x64` policy, advantage, and baseline networks, under the current sequential traversal collector and a Ray-parallel collector with three workers. The learner remains central and the traversal/replay budgets are partitioned across workers rather than multiplied.
+
+**Question:** does Ray-parallel DREAM preserve final policy quality while reducing traversal and end-to-end runtime?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -375,6 +387,9 @@ python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run
 
 # Experiment 20 — role-specific capacity ablation
 python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run
+
+# Experiment 21 — sequential versus Ray-parallel equivalence ablation
+python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run
 ```
 
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
@@ -590,6 +605,27 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 21 — sequential/parallel equivalence smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp21-parallel-equivalence-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run \
+    --seeds 1234 \
+    --variant-ids dream_3x64_sequential,dream_3x64_ray_parallel \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --batch-size-advantage 1 \
+    --batch-size-strategy 1 \
+    --batch-size-baseline 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_parallel_equivalence_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -712,6 +748,21 @@ python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
   --evaluation-interval 1 \
   --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
   --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
+
+# Leduc Experiment 21 — sequential/parallel equivalence smoke test
+python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run \
+  --seeds 1234 \
+  --variant-ids dream_3x64_sequential,dream_3x64_ray_parallel \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --output-root outputs/smoke_tests/dream_parallel_equivalence_ablation
 ```
 
 For local smoke tests across all experiments:
@@ -906,6 +957,21 @@ python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
   --evaluation-interval 1 \
   --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
   --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
+
+# Leduc Experiment 21 — sequential/parallel equivalence smoke test
+python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run \
+  --seeds 1234 \
+  --variant-ids dream_3x64_sequential,dream_3x64_ray_parallel \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --output-root outputs/smoke_tests/dream_parallel_equivalence_ablation
 ```
 
 Outputs are written to a timestamped subdirectory under `outputs/` by default. Treat full `outputs/` directories as scratch data; promote only curated, lightweight thesis-facing artifacts into `thesis_artifacts/` using the workflow in [`docs/THESIS_ARTIFACTS.md`](docs/THESIS_ARTIFACTS.md).

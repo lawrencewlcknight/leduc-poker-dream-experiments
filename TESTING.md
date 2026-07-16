@@ -242,6 +242,21 @@ python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run \
   --evaluation-interval 1 \
   --variants all_2x32_reference,advantage_3x64_policy_baseline_2x32,advantage_2x128_policy_baseline_2x32,all_3x64_reference \
   --output-root outputs/smoke_tests/dream_role_specific_capacity_ablation
+
+# Leduc Experiment 21 — sequential/parallel equivalence smoke test
+python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run \
+  --seeds 1234 \
+  --variant-ids dream_3x64_sequential,dream_3x64_ray_parallel \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --batch-size-advantage 1 \
+  --batch-size-strategy 1 \
+  --batch-size-baseline 1 \
+  --output-root outputs/smoke_tests/dream_parallel_equivalence_ablation
 ```
 
 ## Full runs
@@ -265,6 +280,7 @@ python -m experiments.leduc_poker.dream_average_strategy_weighting_ablation.run
 python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
 python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run
 python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run
+python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run
 ```
 
 The full runs can be computationally expensive. Use the smoke tests first after making code changes.

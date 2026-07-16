@@ -225,6 +225,54 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._last_target_clip_fraction = [np.nan] * self._num_players
         self._policy_training_events = 0
         self._policy_gradient_steps_total = 0
+        self._cumulative_traversal_seconds = 0.0
+        self._cumulative_advantage_training_seconds = 0.0
+        self._cumulative_baseline_training_seconds = 0.0
+        self._cumulative_policy_training_seconds = 0.0
+        self._cumulative_parallel_sync_seconds = 0.0
+        self._cumulative_replay_refresh_seconds = 0.0
+
+    @property
+    def nodes_touched(self) -> int:
+        return int(self._nodes_touched)
+
+    @property
+    def advantage_memories(self):
+        return self._advantage_memories
+
+    @property
+    def strategy_memory(self):
+        return self._strategy_memories
+
+    @property
+    def baseline_replays(self):
+        return self._baseline_replays
+
+    def set_iteration(self, iteration: int) -> None:
+        self._iteration = int(iteration)
+
+    def new_initial_state(self):
+        return self._game.new_initial_state()
+
+    def traverse_outcome_sampling(
+        self,
+        state,
+        traverser: int,
+        pi_reach: float = 1.0,
+        sigma_reach: float = 1.0,
+    ) -> float:
+        return self._traverse_outcome_sampling(
+            state,
+            int(traverser),
+            float(pi_reach),
+            float(sigma_reach),
+        )
+
+    def set_traversal_weights(self, advantage_weights, baseline_weights) -> None:
+        for net, state in zip(self._advantage_networks, advantage_weights):
+            net.load_state_dict(state)
+        for net, state in zip(self._baseline_networks, baseline_weights):
+            net.load_state_dict(state)
 
     def _apply_learning_rate_schedule(self, iteration: int) -> None:
         iteration = int(iteration)
@@ -308,32 +356,43 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             self._apply_learning_rate_schedule(iteration)
             self._iteration = int(iteration)
             for traverser in range(self._num_players):
-                for _ in range(self._num_traversals):
-                    state = self._game.new_initial_state()
-                    self._traverse_outcome_sampling(state, traverser, pi_reach=1.0, sigma_reach=1.0)
+                self._collect_traversals_for_player(traverser)
 
+                advantage_start = time.perf_counter()
                 self._last_advantage_loss[traverser] = self._learn_advantage_network(traverser)
+                self._cumulative_advantage_training_seconds += time.perf_counter() - advantage_start
+                baseline_start = time.perf_counter()
                 self._last_baseline_loss[traverser] = self._learn_baseline_network(traverser)
+                self._cumulative_baseline_training_seconds += time.perf_counter() - baseline_start
 
             if mode == "intermittent":
                 train_policy_now = (
                     iteration % self._policy_network_train_every == 0
                 ) or (iteration == target_iteration)
                 if train_policy_now:
+                    policy_start = time.perf_counter()
                     if isolate_policy_training_rng:
                         rng_state = self._capture_rng_state()
                         self._last_policy_loss = self._learn_strategy_network()
+                        self._cumulative_policy_training_seconds += (
+                            time.perf_counter() - policy_start
+                        )
                         curves.append(self._checkpoint_metrics(start_time))
                         self._restore_rng_state(rng_state)
                     else:
                         self._last_policy_loss = self._learn_strategy_network()
+                        self._cumulative_policy_training_seconds += (
+                            time.perf_counter() - policy_start
+                        )
                         curves.append(self._checkpoint_metrics(start_time))
 
             elif mode == "final_only" and iteration == target_iteration:
                 original_steps = self._policy_network_train_steps
                 if final_policy_network_train_steps is not None:
                     self._policy_network_train_steps = int(final_policy_network_train_steps)
+                policy_start = time.perf_counter()
                 self._last_policy_loss = self._learn_strategy_network_controlled(isolate_rng=False)
+                self._cumulative_policy_training_seconds += time.perf_counter() - policy_start
                 self._policy_network_train_steps = original_steps
                 curves.append(self._checkpoint_metrics(start_time))
 
@@ -375,6 +434,16 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "target_clip_value": float(self._target_clip_value),
             "target_standardize_epsilon": float(self._target_standardize_epsilon),
             "average_strategy_weighting": self._average_strategy_weighting,
+            "cumulative_traversal_seconds": float(self._cumulative_traversal_seconds),
+            "cumulative_advantage_training_seconds": float(
+                self._cumulative_advantage_training_seconds
+            ),
+            "cumulative_baseline_training_seconds": float(
+                self._cumulative_baseline_training_seconds
+            ),
+            "cumulative_policy_training_seconds": float(self._cumulative_policy_training_seconds),
+            "cumulative_parallel_sync_seconds": float(self._cumulative_parallel_sync_seconds),
+            "cumulative_replay_refresh_seconds": float(self._cumulative_replay_refresh_seconds),
             "policy_network_type": self._policy_network_type,
             "advantage_network_type": self._advantage_network_type,
             "baseline_network_type": self._baseline_network_type,
@@ -449,6 +518,24 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._average_strategy_weighting = _normalise_average_strategy_weighting(
             state.get("average_strategy_weighting", self._average_strategy_weighting)
         )
+        self._cumulative_traversal_seconds = float(
+            state.get("cumulative_traversal_seconds", 0.0)
+        )
+        self._cumulative_advantage_training_seconds = float(
+            state.get("cumulative_advantage_training_seconds", 0.0)
+        )
+        self._cumulative_baseline_training_seconds = float(
+            state.get("cumulative_baseline_training_seconds", 0.0)
+        )
+        self._cumulative_policy_training_seconds = float(
+            state.get("cumulative_policy_training_seconds", 0.0)
+        )
+        self._cumulative_parallel_sync_seconds = float(
+            state.get("cumulative_parallel_sync_seconds", 0.0)
+        )
+        self._cumulative_replay_refresh_seconds = float(
+            state.get("cumulative_replay_refresh_seconds", 0.0)
+        )
         self._policy_network_type = str(
             state.get("policy_network_type", self._policy_network_type)
         )
@@ -484,6 +571,18 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             torch.set_rng_state(state["torch_random_state"])
 
     # ---- Traversal ----
+    def _collect_traversals_for_player(self, traverser: int) -> None:
+        traversal_start = time.perf_counter()
+        for _ in range(self._num_traversals):
+            state = self._game.new_initial_state()
+            self._traverse_outcome_sampling(
+                state,
+                int(traverser),
+                pi_reach=1.0,
+                sigma_reach=1.0,
+            )
+        self._cumulative_traversal_seconds += time.perf_counter() - traversal_start
+
     def _advance_through_chance(self, state):
         while state.is_chance_node():
             outcomes, probs = zip(*state.chance_outcomes())
@@ -693,13 +792,13 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             preds: List[torch.Tensor] = []
             targets: List[torch.Tensor] = []
             for tr in samples:
-                s = torch.from_numpy(np.asarray(tr.info_state, dtype=np.float32)[None, :])
+                s = torch.from_numpy(np.array(tr.info_state, dtype=np.float32, copy=True)[None, :])
                 q_values = net(s)[0]
                 preds.append(q_values[int(tr.action)])
                 if bool(tr.done):
                     targets.append(torch.tensor(float(tr.reward), dtype=torch.float32))
                     continue
-                next_info = np.asarray(tr.next_info_state, dtype=np.float32)
+                next_info = np.array(tr.next_info_state, dtype=np.float32, copy=True)
                 next_legal = list(tr.next_legal_actions)
                 next_player = int(tr.next_player)
                 pi_next = self._regret_matching_policy(next_info, next_legal, next_player)
@@ -803,6 +902,21 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "iteration": int(self._iteration),
             "nodes_touched": int(self._nodes_touched),
             "wall_clock_seconds": float(time.perf_counter() - start_time),
+            "cumulative_traversal_seconds": float(self._cumulative_traversal_seconds),
+            "cumulative_advantage_training_seconds": float(
+                self._cumulative_advantage_training_seconds
+            ),
+            "cumulative_baseline_training_seconds": float(
+                self._cumulative_baseline_training_seconds
+            ),
+            "cumulative_policy_training_seconds": float(self._cumulative_policy_training_seconds),
+            "cumulative_supervised_training_seconds": float(
+                self._cumulative_advantage_training_seconds
+                + self._cumulative_baseline_training_seconds
+                + self._cumulative_policy_training_seconds
+            ),
+            "cumulative_parallel_sync_seconds": float(self._cumulative_parallel_sync_seconds),
+            "cumulative_replay_refresh_seconds": float(self._cumulative_replay_refresh_seconds),
             "learning_rate": float(self._current_learning_rate),
             "nash_conv": nash_conv,
             "exploitability": expl,
@@ -843,7 +957,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         masses = []
         entropies = []
         for s in samples:
-            info = torch.from_numpy(np.asarray(s.info_state, dtype=np.float32)[None, :])
+            info = torch.from_numpy(np.array(s.info_state, dtype=np.float32, copy=True)[None, :])
             with torch.no_grad():
                 probs = self._policy_softmax(self._policy_network(info))[0].cpu().numpy()
             legal = np.where(np.asarray(s.strategy_action_probs) > 0)[0].tolist()

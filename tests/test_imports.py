@@ -7,6 +7,7 @@ def test_import_shared_modules():
     import dream_poker.lr_schedule  # noqa: F401
     import dream_poker.network_budget  # noqa: F401
     import dream_poker.networks  # noqa: F401
+    import dream_poker.parallel_utils  # noqa: F401
     import dream_poker.random_search  # noqa: F401
     import dream_poker.replay  # noqa: F401
     import dream_poker.seeding  # noqa: F401
@@ -28,6 +29,7 @@ def test_import_experiment_configs():
     import experiments.leduc_poker.dream_network_capacity_extremes_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_network_depth_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_network_size_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_parallel_equivalence_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_plain_network_depth_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_residual_layer_norm_network_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_residual_network_ablation.config  # noqa: F401

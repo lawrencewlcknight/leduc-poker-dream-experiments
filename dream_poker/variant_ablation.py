@@ -103,6 +103,18 @@ def summarise_variant_curve(
         "final_baseline_buffer_size_player_0": int(final_row.get("baseline_buffer_size_player_0", 0)),
         "final_baseline_buffer_size_player_1": int(final_row.get("baseline_buffer_size_player_1", 0)),
     }
+    for col in [
+        "cumulative_traversal_seconds",
+        "cumulative_advantage_training_seconds",
+        "cumulative_baseline_training_seconds",
+        "cumulative_policy_training_seconds",
+        "cumulative_supervised_training_seconds",
+        "cumulative_parallel_sync_seconds",
+        "cumulative_replay_refresh_seconds",
+        "cumulative_worker_collection_seconds",
+    ]:
+        if col in final_row:
+            summary[f"final_{col}"] = float(final_row.get(col, np.nan))
     for key in treatment_keys:
         summary[key] = config[key]
     return summary

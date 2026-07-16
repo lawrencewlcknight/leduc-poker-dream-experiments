@@ -39,6 +39,17 @@ CORE_SUMMARY_METRICS = [
     "final_nodes_touched",
 ]
 
+TIMING_SUMMARY_COLUMNS = [
+    "cumulative_traversal_seconds",
+    "cumulative_advantage_training_seconds",
+    "cumulative_baseline_training_seconds",
+    "cumulative_policy_training_seconds",
+    "cumulative_supervised_training_seconds",
+    "cumulative_parallel_sync_seconds",
+    "cumulative_replay_refresh_seconds",
+    "cumulative_worker_collection_seconds",
+]
+
 
 def json_ready(obj):
     if isinstance(obj, Path):
@@ -46,7 +57,10 @@ def json_ready(obj):
     if isinstance(obj, (np.integer,)):
         return int(obj)
     if isinstance(obj, (np.floating,)):
-        return float(obj)
+        val = float(obj)
+        return None if not np.isfinite(val) else val
+    if isinstance(obj, float):
+        return None if not np.isfinite(obj) else obj
     if isinstance(obj, dict):
         return {k: json_ready(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
@@ -70,8 +84,7 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
         raise RuntimeError("OpenSpiel is not installed. Install open_spiel before running this experiment.")
     set_seed(seed)
     game = pyspiel.load_game(config["game_name"])
-    return DREAMSolver(
-        game=game,
+    solver_kwargs = dict(
         policy_network_type=config.get("policy_network_type", "mlp"),
         policy_network_layers=config["policy_network_layers"],
         advantage_network_type=config.get("advantage_network_type", "mlp"),
@@ -102,6 +115,25 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
         target_clip_value=config.get("target_clip_value", 1.0),
         target_standardize_epsilon=config.get("target_standardize_epsilon", 1e-6),
         seed=seed,
+    )
+    execution_backend = str(config.get("execution_backend", "sequential"))
+    if execution_backend == "sequential":
+        return DREAMSolver(game=game, **solver_kwargs)
+    if execution_backend == "ray_parallel":
+        from dream_poker.parallel_solver import ParallelDREAMSolver
+
+        return ParallelDREAMSolver(
+            game=game,
+            game_name=str(config["game_name"]),
+            parallel_num_workers=int(config.get("parallel_num_workers", 3)),
+            parallel_run_seed=int(config.get("parallel_run_seed", seed)),
+            parallel_ray_address=config.get("parallel_ray_address"),
+            parallel_log_to_driver=bool(config.get("parallel_log_to_driver", False)),
+            **solver_kwargs,
+        )
+    raise ValueError(
+        "execution_backend must be 'sequential' or 'ray_parallel', got "
+        f"{execution_backend!r}."
     )
 
 
@@ -171,6 +203,9 @@ def summarise_seed_curves(
         "final_policy_loss": float(final_row.get("policy_loss", np.nan)),
         "final_policy_entropy_mean": float(final_row.get("policy_entropy_mean", np.nan)),
     }
+    for col in TIMING_SUMMARY_COLUMNS:
+        if col in final_row:
+            summary[f"final_{col}"] = float(final_row.get(col, np.nan))
     return summary
 
 
@@ -198,6 +233,8 @@ def run_dream_variant_seed(
     curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
     summary = summarise_seed_curves(curves, seed, variant, config, final_steps)
     write_json(seed_dir / "seed_summary.json", summary)
+    if hasattr(solver, "close"):
+        solver.close()
     del solver
     cleanup_training_memory()
     return curves, summary
