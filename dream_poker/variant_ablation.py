@@ -48,7 +48,11 @@ def add_variant_curve_columns(
     curves["variant"] = get_variant_id(variant)
     curves["variant_label"] = get_variant_label(variant)
     for key in treatment_keys:
-        curves[key] = config[key]
+        value = config[key]
+        if isinstance(value, (list, tuple, dict)):
+            curves[key] = [value] * len(curves)
+        else:
+            curves[key] = value
     return curves
 
 
