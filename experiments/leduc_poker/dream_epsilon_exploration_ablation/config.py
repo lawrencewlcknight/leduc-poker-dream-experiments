@@ -42,6 +42,9 @@ EXPERIMENT_CONFIG = {
     "game_value_player_0": LEDUC_GAME_VALUE_P0,
     "average_policy_value_target": LEDUC_AVERAGE_POLICY_VALUE_TARGET,
     "exploitability_threshold": EXPLOITABILITY_THRESHOLD,
+    "plot_prefix": "dream_epsilon_exploration",
+    "plot_title": "DREAM Epsilon-Exploration Ablation",
+    "baseline_variant": "epsilon_006_exp_baseline",
     "output_root": Path("outputs") / "dream_epsilon_exploration_ablation",
 }
 

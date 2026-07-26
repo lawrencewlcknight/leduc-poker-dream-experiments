@@ -7,6 +7,9 @@ import re
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
+import matplotlib
+
+matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

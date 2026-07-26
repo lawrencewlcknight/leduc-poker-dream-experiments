@@ -817,6 +817,16 @@ Use these module commands as the `PYTHON_EXPERIMENT_COMMAND` argument:
 | Experiment 19: residual-LayerNorm network ablation | `python -m experiments.leduc_poker.dream_residual_layer_norm_network_ablation.run --output-root outputs/cloud/dream_residual_layer_norm_network_ablation` |
 | Experiment 20: role-specific capacity ablation | `python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run --output-root outputs/cloud/dream_role_specific_capacity_ablation` |
 | Experiment 21: sequential/parallel equivalence ablation | `python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run --output-root outputs/cloud/dream_parallel_equivalence_ablation` |
+| Experiment 22: architecture-candidate comparison | `python -m experiments.leduc_poker.dream_architecture_candidate_comparison.run --output-root outputs/cloud/dream_architecture_candidate_comparison` |
+| Experiment 23: candidate-architecture epsilon ablation | `python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.run --output-root outputs/cloud/dream_candidate_epsilon_exploration_ablation` |
+| Experiment 24: candidate traversal-budget ablation | `python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run --output-root outputs/cloud/dream_candidate_traversal_budget_ablation` |
+| Experiment 25: candidate strategy replay-capacity ablation | `python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablation.run --output-root outputs/cloud/dream_candidate_strategy_replay_capacity_ablation` |
+| Experiment 26: candidate learned-baseline replay-capacity ablation | `python -m experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablation.run --output-root outputs/cloud/dream_candidate_baseline_replay_capacity_ablation` |
+| Experiment 27: candidate policy-extraction budget ablation | `python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.run --output-root outputs/cloud/dream_candidate_policy_extraction_budget_ablation` |
+| Experiment 28: candidate policy-extraction cadence ablation | `python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_ablation.run --output-root outputs/cloud/dream_candidate_policy_extraction_cadence_ablation` |
+| Experiment 29: candidate advantage-fitting steps ablation | `python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.run --output-root outputs/cloud/dream_candidate_advantage_fitting_steps_ablation` |
+| Experiment 30: candidate advantage batch-size ablation | `python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.run --output-root outputs/cloud/dream_candidate_advantage_batch_size_ablation` |
+| Experiment 31: candidate constant learning-rate ablation | `python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run --output-root outputs/cloud/dream_candidate_constant_learning_rate_ablation` |
 
 Example:
 

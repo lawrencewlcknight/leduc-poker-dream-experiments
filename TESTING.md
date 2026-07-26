@@ -257,6 +257,122 @@ python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run \
   --batch-size-strategy 1 \
   --batch-size-baseline 1 \
   --output-root outputs/smoke_tests/dream_parallel_equivalence_ablation
+
+# Leduc Experiment 22 — architecture-candidate comparison smoke test
+python -m experiments.leduc_poker.dream_architecture_candidate_comparison.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants baseline_all_2x32,candidate_advantage_2x128_policy_baseline_2x32 \
+  --output-root outputs/smoke_tests/dream_architecture_candidate_comparison
+
+# Leduc Experiment 23 — candidate-architecture epsilon smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon_exploration_ablation
+
+# Leduc Experiment 24 — candidate traversal-budget smoke test
+python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_traversals_160_baseline,candidate_traversals_320 \
+  --output-root outputs/smoke_tests/dream_candidate_traversal_budget_ablation
+
+# Leduc Experiment 25 — candidate strategy replay-capacity smoke test
+python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_strategy_memory_1m_baseline,candidate_strategy_memory_100k \
+  --output-root outputs/smoke_tests/dream_candidate_strategy_replay_capacity_ablation
+
+# Leduc Experiment 26 — candidate learned-baseline replay-capacity smoke test
+python -m experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_baseline_memory_1m_baseline,candidate_baseline_memory_100k \
+  --output-root outputs/smoke_tests/dream_candidate_baseline_replay_capacity_ablation
+
+# Leduc Experiment 27 — candidate policy-extraction budget smoke test
+python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_policy_steps_100_baseline,candidate_policy_steps_200 \
+  --output-root outputs/smoke_tests/dream_candidate_policy_extraction_budget_ablation
+
+# Leduc Experiment 28 — candidate policy-extraction cadence smoke test
+python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --variants candidate_policy_every_25_baseline,candidate_policy_every_10 \
+  --output-root outputs/smoke_tests/dream_candidate_policy_extraction_cadence_ablation
+
+# Leduc Experiment 29 — candidate advantage-fitting steps smoke test
+python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_advantage_steps_50_baseline,candidate_advantage_steps_25 \
+  --output-root outputs/smoke_tests/dream_candidate_advantage_fitting_steps_ablation
+
+# Leduc Experiment 30 — candidate advantage batch-size smoke test
+python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_advantage_batch_1024_baseline,candidate_advantage_batch_512 \
+  --output-root outputs/smoke_tests/dream_candidate_advantage_batch_size_ablation
+
+# Leduc Experiment 31 — candidate constant learning-rate smoke test
+python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
+  --output-root outputs/smoke_tests/dream_candidate_constant_learning_rate_ablation
 ```
 
 ## Full runs
@@ -281,6 +397,16 @@ python -m experiments.leduc_poker.dream_factorised_advantage_head_ablation.run
 python -m experiments.leduc_poker.dream_layer_norm_network_ablation.run
 python -m experiments.leduc_poker.dream_role_specific_capacity_ablation.run
 python -m experiments.leduc_poker.dream_parallel_equivalence_ablation.run
+python -m experiments.leduc_poker.dream_architecture_candidate_comparison.run
+python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.run
+python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run
+python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablation.run
+python -m experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablation.run
+python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.run
+python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_ablation.run
+python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.run
+python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.run
+python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run
 ```
 
 The full runs can be computationally expensive. Use the smoke tests first after making code changes.

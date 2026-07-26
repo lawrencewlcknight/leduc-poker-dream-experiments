@@ -12,11 +12,22 @@ def test_import_shared_modules():
     import dream_poker.replay  # noqa: F401
     import dream_poker.seeding  # noqa: F401
     import dream_poker.variant_ablation  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_hp_ablation_common  # noqa: F401
     import dream_poker.warm_start  # noqa: F401
 
 
 def test_import_experiment_configs():
+    import experiments.leduc_poker.dream_architecture_candidate_comparison.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_baseline_network_budget_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_policy_extraction_cadence_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_traversal_budget_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_checkpoint_stability.config  # noqa: F401
     import experiments.leduc_poker.dream_constrained_random_search.config  # noqa: F401
     import experiments.leduc_poker.dream_average_strategy_weighting_ablation.config  # noqa: F401
