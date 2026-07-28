@@ -19,6 +19,18 @@ def variants_by_id():
 def test_candidate_epsilon_ablation_uses_three_matched_screening_seeds():
     assert DEFAULT_SEEDS == [1234, 2025, 31415]
     assert EXPERIMENT_CONFIG["seeds"] == DEFAULT_SEEDS
+    assert EXPERIMENT_CONFIG["fixed_baseline"]["enabled"] is True
+    assert EXPERIMENT_CONFIG["fixed_baseline"]["source_variant"] == (
+        "candidate_advantage_2x128_policy_baseline_2x32"
+    )
+    assert (
+        EXPERIMENT_CONFIG["fixed_baseline"]["source_output_dir"]
+        / EXPERIMENT_CONFIG["fixed_baseline"]["curves_filename"]
+    ).exists()
+    assert (
+        EXPERIMENT_CONFIG["fixed_baseline"]["source_output_dir"]
+        / EXPERIMENT_CONFIG["fixed_baseline"]["summary_filename"]
+    ).exists()
 
 
 def test_candidate_epsilon_grid_extends_above_previous_best():

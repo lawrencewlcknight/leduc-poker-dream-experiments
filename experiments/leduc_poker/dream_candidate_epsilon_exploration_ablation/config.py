@@ -4,6 +4,9 @@ import copy
 from pathlib import Path
 
 from dream_poker.constants import SMOKE_TEST_SEEDS
+from experiments.leduc_poker.dream_candidate_hp_ablation_common import (
+    make_exp22_candidate_fixed_baseline_config,
+)
 from experiments.leduc_poker.dream_architecture_candidate_comparison.config import (
     ADVANTAGE_CANDIDATE_LAYERS,
     POLICY_BASELINE_LAYERS,
@@ -76,6 +79,9 @@ EXPERIMENT_CONFIG.update(
         "plot_title": "DREAM Candidate Epsilon-Exploration Ablation",
         "baseline_variant": BASELINE_VARIANT,
         "previous_best_epsilon_variant": PREVIOUS_BEST_EPSILON_VARIANT,
+        "ablation_variants": list(CANDIDATE_EPSILON_VARIANTS),
+        "treatment_keys": ["epsilon"],
+        "fixed_baseline": make_exp22_candidate_fixed_baseline_config(),
         "output_root": Path("outputs") / "dream_candidate_epsilon_exploration_ablation",
     }
 )
@@ -92,6 +98,7 @@ SMOKE_TEST_CONFIG_OVERRIDES.update(
         "baseline_network_train_steps": 1,
         "policy_network_train_every": 1,
         "evaluation_interval": 1,
+        "fixed_baseline": {"enabled": False},
         "output_root": (
             Path("outputs") / "smoke_tests" / "dream_candidate_epsilon_exploration_ablation"
         ),

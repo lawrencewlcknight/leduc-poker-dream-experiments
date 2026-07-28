@@ -6,7 +6,7 @@ only `num_traversals`, testing whether the improvement seen in random candidate
 `320`, and `480` traversals per player per DREAM iteration.
 
 The baseline uses policy and learned-baseline networks `[32, 32]`, advantage
-networks `[128, 128]`, linear average-strategy weighting, `epsilon=0.10`, and
+networks `[128, 128]`, linear average-strategy weighting, `epsilon=0.06`, and
 three matched seeds.
 
 ## Run
@@ -14,6 +14,8 @@ three matched seeds.
 ```bash
 python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run
 ```
+
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
 
 ## Smoke test
 
@@ -26,6 +28,7 @@ python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run 
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_traversals_160_baseline,candidate_traversals_320 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_traversal_budget_ablation
 ```
 
@@ -42,6 +45,7 @@ python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run 
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_traversals_160_baseline,candidate_traversals_320 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_traversal_budget_ablation" \
   "n2-standard-4" \
   "3600" \

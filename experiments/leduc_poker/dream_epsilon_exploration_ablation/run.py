@@ -29,6 +29,11 @@ from dream_poker.variant_ablation import (
     summarise_variant_curve,
     write_multiseed_npz,
 )
+from experiments.leduc_poker.dream_candidate_hp_ablation_common import (
+    ensure_fixed_baseline_variant,
+    fixed_baseline_enabled,
+    load_fixed_baseline_outputs,
+)
 
 from .config import BASELINE_VARIANT, EPSILON_VARIANTS, EXPERIMENT_CONFIG
 
@@ -81,14 +86,16 @@ def run_experiment(
     config: Dict,
     variants: Sequence[Dict] = EPSILON_VARIANTS,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Path]:
+    variants = ensure_fixed_baseline_variant(config, variants)
     output_dir = create_timestamped_output_dir(config["output_root"])
     baseline_variant = str(config.get("baseline_variant", BASELINE_VARIANT))
     metadata = {**config, "variants": list(variants), "baseline_variant": baseline_variant}
     write_json(output_dir / "experiment_metadata.json", json_ready(metadata))
 
-    all_curves = []
-    summaries = []
+    all_curves, summaries = load_fixed_baseline_outputs(config, variants, TREATMENT_KEYS, output_dir)
     for variant in variants:
+        if fixed_baseline_enabled(config) and get_variant_id(variant) == baseline_variant:
+            continue
         for seed in config["seeds"]:
             print(f"Running {get_variant_id(variant)} seed {seed}...")
             curves, summary = run_single_variant_seed(variant, int(seed), config, output_dir)
@@ -166,6 +173,11 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         action="store_true",
         help="Do not restore RNG state after intermittent average-policy training.",
     )
+    parser.add_argument(
+        "--train-baseline",
+        action="store_true",
+        help="Train the baseline arm instead of reusing a configured fixed comparator artifact.",
+    )
     return parser
 
 
@@ -198,6 +210,8 @@ def config_from_args(args: argparse.Namespace, base_config: Dict = EXPERIMENT_CO
         config["output_root"] = args.output_root
     if args.allow_policy_training_rng_advance:
         config["isolate_policy_training_rng"] = False
+    if args.train_baseline:
+        config["fixed_baseline"] = {"enabled": False}
     return config
 
 

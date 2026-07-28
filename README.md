@@ -542,6 +542,12 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
 python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run
 ```
 
+Experiments 23--31 reuse the tracked Experiment 22 candidate-architecture
+baseline artifact as their comparator by default. This avoids retraining the
+unchanged baseline arm in each ablation. Pass `--train-baseline` only when you
+intentionally want to regenerate the comparator for a smoke test or debugging
+run.
+
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
 submission script. These commands do not require the repository Python
 dependencies to be installed locally; they only require the Google Cloud CLI,
@@ -807,6 +813,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon_exploration_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -824,6 +831,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_traversals_160_baseline,candidate_traversals_320 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_traversal_budget_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -842,6 +850,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_strategy_memory_1m_baseline,candidate_strategy_memory_100k \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_strategy_replay_capacity_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -860,6 +869,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_baseline_memory_1m_baseline,candidate_baseline_memory_100k \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_baseline_replay_capacity_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -877,6 +887,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_policy_steps_100_baseline,candidate_policy_steps_200 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_policy_extraction_budget_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -894,6 +905,7 @@ the GCP environment variables from
     --advantage-network-train-steps 1 \
     --baseline-network-train-steps 1 \
     --variants candidate_policy_every_25_baseline,candidate_policy_every_10 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_policy_extraction_cadence_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -911,6 +923,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_advantage_steps_50_baseline,candidate_advantage_steps_25 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_advantage_fitting_steps_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -929,6 +942,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_advantage_batch_1024_baseline,candidate_advantage_batch_512 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_advantage_batch_size_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -947,6 +961,7 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_constant_learning_rate_ablation" \
   "n2-standard-4" \
   "3600" \
@@ -1112,6 +1127,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.r
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_epsilon_exploration_ablation
 
 # Leduc Experiment 24 — candidate traversal-budget smoke test
@@ -1123,6 +1139,7 @@ python -m experiments.leduc_poker.dream_candidate_traversal_budget_ablation.run 
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_traversals_160_baseline,candidate_traversals_320 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_traversal_budget_ablation
 
 # Leduc Experiment 25 — candidate strategy replay-capacity smoke test
@@ -1135,6 +1152,7 @@ python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablat
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_strategy_memory_1m_baseline,candidate_strategy_memory_100k \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_strategy_replay_capacity_ablation
 
 # Leduc Experiment 26 — candidate learned-baseline replay-capacity smoke test
@@ -1147,6 +1165,7 @@ python -m experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablat
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_baseline_memory_1m_baseline,candidate_baseline_memory_100k \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_baseline_replay_capacity_ablation
 
 # Leduc Experiment 27 — candidate policy-extraction budget smoke test
@@ -1158,6 +1177,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablat
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_policy_steps_100_baseline,candidate_policy_steps_200 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_policy_extraction_budget_ablation
 
 # Leduc Experiment 28 — candidate policy-extraction cadence smoke test
@@ -1169,6 +1189,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_abla
   --advantage-network-train-steps 1 \
   --baseline-network-train-steps 1 \
   --variants candidate_policy_every_25_baseline,candidate_policy_every_10 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_policy_extraction_cadence_ablation
 
 # Leduc Experiment 29 — candidate advantage-fitting steps smoke test
@@ -1180,6 +1201,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablati
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_advantage_steps_50_baseline,candidate_advantage_steps_25 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_advantage_fitting_steps_ablation
 
 # Leduc Experiment 30 — candidate advantage batch-size smoke test
@@ -1192,6 +1214,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_advantage_batch_1024_baseline,candidate_advantage_batch_512 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_advantage_batch_size_ablation
 
 # Leduc Experiment 31 — candidate constant learning-rate smoke test
@@ -1204,6 +1227,7 @@ python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablatio
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_constant_learning_rate_ablation
 ```
 
@@ -1437,6 +1461,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.r
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_epsilon_exploration_ablation
 ```
 

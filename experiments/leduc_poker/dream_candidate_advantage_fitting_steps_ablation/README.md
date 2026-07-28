@@ -14,6 +14,8 @@ per player per DREAM iteration. The baseline is `50`.
 python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -25,6 +27,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablati
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_advantage_steps_50_baseline,candidate_advantage_steps_25 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_advantage_fitting_steps_ablation
 ```
 
@@ -41,6 +44,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablati
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_advantage_steps_50_baseline,candidate_advantage_steps_25 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_advantage_fitting_steps_ablation" \
   "n2-standard-4" \
   "3600" \

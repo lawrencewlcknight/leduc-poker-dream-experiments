@@ -13,6 +13,8 @@ iterations. The baseline is every `25` iterations.
 python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -24,6 +26,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_abla
   --advantage-network-train-steps 1 \
   --baseline-network-train-steps 1 \
   --variants candidate_policy_every_25_baseline,candidate_policy_every_10 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_policy_extraction_cadence_ablation
 ```
 
@@ -40,6 +43,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_cadence_abla
     --advantage-network-train-steps 1 \
     --baseline-network-train-steps 1 \
     --variants candidate_policy_every_25_baseline,candidate_policy_every_10 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_policy_extraction_cadence_ablation" \
   "n2-standard-4" \
   "3600" \

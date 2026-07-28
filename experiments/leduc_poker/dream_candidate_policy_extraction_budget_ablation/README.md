@@ -14,6 +14,8 @@ per training event. The baseline is `100`.
 python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -25,6 +27,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablat
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_policy_steps_100_baseline,candidate_policy_steps_200 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_policy_extraction_budget_ablation
 ```
 
@@ -41,6 +44,7 @@ python -m experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablat
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_policy_steps_100_baseline,candidate_policy_steps_200 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_policy_extraction_budget_ablation" \
   "n2-standard-4" \
   "3600" \

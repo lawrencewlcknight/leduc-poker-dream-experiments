@@ -89,6 +89,7 @@ def test_candidate_hp_ablation_metadata(
     config = module.EXPERIMENT_CONFIG
     variants = getattr(module, variants_name)
 
+    assert DEFAULT_EPSILON == 0.06
     assert config["seeds"] == DEFAULT_SEEDS
     assert config["epsilon"] == DEFAULT_EPSILON
     assert config["average_strategy_weighting"] == "linear"
@@ -97,6 +98,16 @@ def test_candidate_hp_ablation_metadata(
     assert config["baseline_network_layers"] == POLICY_BASELINE_LAYERS
     assert config["baseline_variant"] == baseline_variant
     assert config["treatment_keys"] == [treatment_key]
+    assert config["fixed_baseline"]["enabled"] is True
+    assert config["fixed_baseline"]["source_variant"] == (
+        "candidate_advantage_2x128_policy_baseline_2x32"
+    )
+    assert (
+        config["fixed_baseline"]["source_output_dir"] / config["fixed_baseline"]["curves_filename"]
+    ).exists()
+    assert (
+        config["fixed_baseline"]["source_output_dir"] / config["fixed_baseline"]["summary_filename"]
+    ).exists()
     assert [variant["variant_id"] for variant in variants][0] == baseline_variant
     assert [variant[treatment_key] for variant in variants] == expected_values
 

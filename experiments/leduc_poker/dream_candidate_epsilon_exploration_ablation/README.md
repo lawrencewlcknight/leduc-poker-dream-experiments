@@ -29,6 +29,8 @@ and paired seed-level deltas against `epsilon=0.06`.
 python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -41,6 +43,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.r
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_epsilon_exploration_ablation
 ```
 
@@ -58,6 +61,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.r
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_epsilon_006_baseline,candidate_epsilon_010 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon_exploration_ablation" \
   "n2-standard-4" \
   "3600" \

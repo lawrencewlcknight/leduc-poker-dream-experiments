@@ -14,6 +14,8 @@ baseline is `1024`.
 python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -26,6 +28,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_advantage_batch_1024_baseline,candidate_advantage_batch_512 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_advantage_batch_size_ablation
 ```
 
@@ -43,6 +46,7 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_advantage_batch_1024_baseline,candidate_advantage_batch_512 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_advantage_batch_size_ablation" \
   "n2-standard-4" \
   "3600" \

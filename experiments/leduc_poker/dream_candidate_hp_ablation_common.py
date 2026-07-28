@@ -32,18 +32,25 @@ from dream_poker.variant_ablation import (
     apply_variant_overrides,
     create_variant_ablation_plots,
     get_variant_id,
+    get_variant_label,
     paired_difference_summary,
     summarise_variant_curve,
     write_multiseed_npz,
 )
 from experiments.leduc_poker.dream_architecture_candidate_comparison.config import (
     ADVANTAGE_CANDIDATE_LAYERS,
+    CANDIDATE_VARIANT as EXP22_CANDIDATE_VARIANT,
     POLICY_BASELINE_LAYERS,
 )
 
 
 DEFAULT_SEEDS = [1234, 2025, 31415]
-DEFAULT_EPSILON = 0.10
+DEFAULT_EPSILON = 0.06
+EXP22_CANDIDATE_BASELINE_ARTIFACT_DIR = (
+    Path(__file__).resolve().parent
+    / "dream_architecture_candidate_comparison"
+    / "baseline_artifacts"
+)
 
 
 BASE_CANDIDATE_HP_CONFIG = {
@@ -81,6 +88,21 @@ BASE_CANDIDATE_HP_CONFIG = {
     "average_policy_value_target": LEDUC_AVERAGE_POLICY_VALUE_TARGET,
     "exploitability_threshold": EXPLOITABILITY_THRESHOLD,
 }
+
+
+def make_exp22_candidate_fixed_baseline_config() -> Dict:
+    """Return the canonical Experiment 22 candidate artifact used as a fixed comparator."""
+    return {
+        "enabled": True,
+        "source_output_dir": EXP22_CANDIDATE_BASELINE_ARTIFACT_DIR,
+        "source_variant": EXP22_CANDIDATE_VARIANT,
+        "curves_filename": "exp22_candidate_checkpoint_curves_by_variant.csv",
+        "summary_filename": "exp22_candidate_seed_variant_summary.csv",
+        "description": (
+            "Reuses the Experiment 22 candidate-architecture baseline instead of "
+            "retraining the unchanged comparator arm."
+        ),
+    }
 
 
 DEFAULT_DIAGNOSTIC_METRICS = [
@@ -154,6 +176,7 @@ def make_candidate_hp_experiment_config(
             "baseline_variant": baseline_variant,
             "ablation_variants": list(variants),
             "treatment_keys": list(treatment_keys),
+            "fixed_baseline": make_exp22_candidate_fixed_baseline_config(),
             "output_root": Path("outputs") / output_subdir,
         }
     )
@@ -170,8 +193,118 @@ def make_smoke_test_config_overrides(output_subdir: str) -> Dict:
         "baseline_network_train_steps": 1,
         "policy_network_train_every": 1,
         "evaluation_interval": 1,
+        "fixed_baseline": {"enabled": False},
         "output_root": Path("outputs") / "smoke_tests" / output_subdir,
     }
+
+
+def fixed_baseline_enabled(config: Dict) -> bool:
+    fixed = config.get("fixed_baseline")
+    return bool(fixed and fixed.get("enabled", True))
+
+
+def fixed_baseline_source_dir(config: Dict) -> Path:
+    fixed = config.get("fixed_baseline") or {}
+    return Path(fixed["source_output_dir"]).expanduser()
+
+
+def ensure_fixed_baseline_variant(config: Dict, variants: Sequence[Dict]) -> list[Dict]:
+    """Make sure the configured baseline variant is present when a fixed comparator is used."""
+    variants = copy.deepcopy(list(variants))
+    if not fixed_baseline_enabled(config):
+        return variants
+
+    baseline_variant = str(config["baseline_variant"])
+    if any(get_variant_id(variant) == baseline_variant for variant in variants):
+        return variants
+
+    for variant in config.get("ablation_variants", []):
+        if get_variant_id(variant) == baseline_variant:
+            return [copy.deepcopy(variant), *variants]
+
+    raise ValueError(
+        f"Fixed baseline is enabled, but baseline variant {baseline_variant!r} "
+        "is not present in the configured ablation variants."
+    )
+
+
+def load_fixed_baseline_outputs(
+    config: Dict,
+    variants: Sequence[Dict],
+    treatment_keys: Sequence[str],
+    output_dir: Path,
+) -> Tuple[list[pd.DataFrame], list[Dict]]:
+    """Load, remap, and materialise fixed baseline outputs for this ablation."""
+    if not fixed_baseline_enabled(config):
+        return [], []
+
+    fixed = config["fixed_baseline"]
+    source_dir = fixed_baseline_source_dir(config)
+    source_variant = str(fixed["source_variant"])
+    curves_path = source_dir / str(fixed.get("curves_filename", "checkpoint_curves_by_variant.csv"))
+    summary_path = source_dir / str(fixed.get("summary_filename", "seed_variant_summary.csv"))
+    if not curves_path.exists() or not summary_path.exists():
+        raise FileNotFoundError(
+            "Fixed baseline artifact is incomplete. Expected both "
+            f"{curves_path} and {summary_path}."
+        )
+
+    baseline_variant_id = str(config["baseline_variant"])
+    baseline_variant = next(
+        (variant for variant in variants if get_variant_id(variant) == baseline_variant_id),
+        None,
+    )
+    if baseline_variant is None:
+        raise ValueError(f"Baseline variant {baseline_variant_id!r} is not available for remapping.")
+
+    requested_seeds = [int(seed) for seed in config["seeds"]]
+    baseline_config = apply_variant_overrides(config, baseline_variant)
+    baseline_label = get_variant_label(baseline_variant)
+    baseline_description = str(baseline_variant.get("description", ""))
+
+    curves_df = pd.read_csv(curves_path)
+    summary_df = pd.read_csv(summary_path)
+    curves_df = curves_df[curves_df["variant"] == source_variant].copy()
+    summary_df = summary_df[summary_df["variant"] == source_variant].copy()
+
+    available_seeds = set(int(seed) for seed in summary_df["seed"].unique())
+    missing_seeds = sorted(set(requested_seeds) - available_seeds)
+    if missing_seeds:
+        raise ValueError(
+            "Fixed baseline artifact does not contain all requested seeds. "
+            f"Missing seeds: {missing_seeds}; available seeds: {sorted(available_seeds)}."
+        )
+
+    curves_df = curves_df[curves_df["seed"].astype(int).isin(requested_seeds)].copy()
+    summary_df = summary_df[summary_df["seed"].astype(int).isin(requested_seeds)].copy()
+
+    for frame in (curves_df, summary_df):
+        frame["variant"] = baseline_variant_id
+        frame["variant_label"] = baseline_label
+        frame["baseline_reused_from_artifact"] = True
+        frame["fixed_baseline_source_variant"] = source_variant
+        frame["fixed_baseline_source_output_dir"] = str(source_dir)
+        for key in treatment_keys:
+            frame[key] = baseline_config[key]
+    if "description" in summary_df.columns:
+        summary_df["description"] = baseline_description
+
+    curves_df = curves_df.sort_values(["seed", "iteration"]).reset_index(drop=True)
+    summary_df = summary_df.sort_values("seed").reset_index(drop=True)
+
+    for seed in requested_seeds:
+        seed_curves = curves_df[curves_df["seed"].astype(int) == seed].copy()
+        seed_summary = summary_df[summary_df["seed"].astype(int) == seed].iloc[0].to_dict()
+        seed_dir = ensure_dir(output_dir / baseline_variant_id / f"seed_{seed}")
+        seed_curves.to_csv(seed_dir / "checkpoint_curves.csv", index=False)
+        write_json(seed_dir / "seed_summary.json", seed_summary)
+
+    print(
+        "Reusing fixed baseline "
+        f"{source_variant!r} from {source_dir} as {baseline_variant_id!r}.",
+        flush=True,
+    )
+    return [curves_df], summary_df.to_dict(orient="records")
 
 
 def run_single_variant_seed(
@@ -205,15 +338,17 @@ def run_parameter_ablation(
     variants: Sequence[Dict] | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Path]:
     variants = list(config["ablation_variants"] if variants is None else variants)
+    variants = ensure_fixed_baseline_variant(config, variants)
     treatment_keys = list(config["treatment_keys"])
     output_dir = create_timestamped_output_dir(config["output_root"])
     baseline_variant = str(config["baseline_variant"])
     metadata = {**config, "variants": list(variants), "baseline_variant": baseline_variant}
     write_json(output_dir / "experiment_metadata.json", json_ready(metadata))
 
-    all_curves = []
-    summaries = []
+    all_curves, summaries = load_fixed_baseline_outputs(config, variants, treatment_keys, output_dir)
     for variant in variants:
+        if fixed_baseline_enabled(config) and get_variant_id(variant) == baseline_variant:
+            continue
         for seed in config["seeds"]:
             print(f"Running {get_variant_id(variant)} seed {seed}...", flush=True)
             curves, summary = run_single_variant_seed(variant, int(seed), config, output_dir)
@@ -293,6 +428,11 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
         action="store_true",
         help="Do not restore RNG state after intermittent average-policy training.",
     )
+    parser.add_argument(
+        "--train-baseline",
+        action="store_true",
+        help="Train the baseline arm instead of reusing the fixed Experiment 22 comparator artifact.",
+    )
     return parser
 
 
@@ -334,6 +474,8 @@ def config_from_args(args: argparse.Namespace, base_config: Dict) -> Dict:
         config["output_root"] = args.output_root
     if args.allow_policy_training_rng_advance:
         config["isolate_policy_training_rng"] = False
+    if args.train_baseline:
+        config["fixed_baseline"] = {"enabled": False}
     return config
 
 

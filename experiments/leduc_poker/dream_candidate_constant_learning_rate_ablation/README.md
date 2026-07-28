@@ -12,6 +12,8 @@ The default arms are `0.001`, `0.003`, and `0.006`. The baseline is `0.003`.
 python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run
 ```
 
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
+
 ## Smoke test
 
 ```bash
@@ -24,6 +26,7 @@ python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablatio
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_constant_learning_rate_ablation
 ```
 
@@ -41,6 +44,7 @@ python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablatio
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_constant_learning_rate_ablation" \
   "n2-standard-4" \
   "3600" \

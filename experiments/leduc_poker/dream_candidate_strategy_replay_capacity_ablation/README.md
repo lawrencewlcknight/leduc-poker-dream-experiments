@@ -7,13 +7,15 @@ more early-training behaviour.
 
 The default arms are `1e6`, `5e5`, and `1e5` strategy-memory entries. All other
 settings are fixed, including `[32, 32]` policy and baseline networks, `[128,
-128]` advantage networks, linear average-strategy weighting, and `epsilon=0.10`.
+128]` advantage networks, linear average-strategy weighting, and `epsilon=0.06`.
 
 ## Run
 
 ```bash
 python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablation.run
 ```
+
+Full runs reuse the tracked Experiment 22 candidate baseline comparator by default. Add `--train-baseline` only when you intentionally want to retrain that comparator.
 
 ## Smoke test
 
@@ -27,6 +29,7 @@ python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablat
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --variants candidate_strategy_memory_1m_baseline,candidate_strategy_memory_100k \
+  --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_strategy_replay_capacity_ablation
 ```
 
@@ -44,6 +47,7 @@ python -m experiments.leduc_poker.dream_candidate_strategy_replay_capacity_ablat
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --variants candidate_strategy_memory_1m_baseline,candidate_strategy_memory_100k \
+    --train-baseline \
     --output-root outputs/cloud/smoke/leduc_dream_candidate_strategy_replay_capacity_ablation" \
   "n2-standard-4" \
   "3600" \
