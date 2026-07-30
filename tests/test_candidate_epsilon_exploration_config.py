@@ -1,5 +1,7 @@
 """Configuration checks for Experiment 23 candidate epsilon ablation."""
 
+import argparse
+
 from dream_poker.variant_ablation import apply_variant_overrides
 from experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.config import (
     ADVANTAGE_CANDIDATE_LAYERS,
@@ -9,6 +11,10 @@ from experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.config
     EXPERIMENT_CONFIG,
     POLICY_BASELINE_LAYERS,
     PREVIOUS_BEST_EPSILON_VARIANT,
+)
+from experiments.leduc_poker.dream_epsilon_exploration_ablation.run import (
+    add_common_arguments,
+    config_from_args,
 )
 
 
@@ -59,3 +65,16 @@ def test_candidate_epsilon_ablation_uses_architecture_selected_baseline():
         assert config["policy_network_layers"] == POLICY_BASELINE_LAYERS
         assert config["advantage_network_layers"] == ADVANTAGE_CANDIDATE_LAYERS
         assert config["baseline_network_layers"] == POLICY_BASELINE_LAYERS
+
+
+def test_candidate_epsilon_cli_reuses_fixed_baseline_by_default():
+    parser = add_common_arguments(argparse.ArgumentParser())
+
+    default_config = config_from_args(parser.parse_args([]), EXPERIMENT_CONFIG)
+    assert default_config["fixed_baseline"]["enabled"] is True
+
+    retrain_config = config_from_args(
+        parser.parse_args(["--train-baseline"]),
+        EXPERIMENT_CONFIG,
+    )
+    assert retrain_config["fixed_baseline"]["enabled"] is False

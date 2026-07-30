@@ -150,7 +150,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_candidate_constant_learning_rate_ablation/ # Experiment 31
+│       ├── dream_candidate_constant_learning_rate_ablation/ # Experiment 31
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_candidate_long_node_epsilon_comparison/ # Experiment 32
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -540,13 +544,24 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
 
 # Experiment 31 — candidate constant learning-rate ablation
 python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run
+
+# Experiment 32 — long-node candidate epsilon comparison
+python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run
 ```
 
 Experiments 23--31 reuse the tracked Experiment 22 candidate-architecture
 baseline artifact as their comparator by default. This avoids retraining the
 unchanged baseline arm in each ablation. Pass `--train-baseline` only when you
-intentionally want to regenerate the comparator for a smoke test or debugging
-run.
+intentionally want to regenerate the comparator for a debugging run. The full
+experiment commands above do not pass `--train-baseline`, so they do not train
+the baseline arm.
+
+Experiment 32 is different: it intentionally trains both long-node variants over
+five seeds and does not reuse a fixed baseline artifact.
+
+Some smoke-test examples below pass `--train-baseline` explicitly. This is only
+to exercise both training arms under a tiny three-iteration budget; it is not the
+default behaviour for full experiments.
 
 To run quick smoke tests for later DREAM ablations on GCP, use the Batch
 submission script. These commands do not require the repository Python
@@ -967,6 +982,23 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 32 — long-node candidate epsilon smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp32-long-node-epsilon-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_long_node_epsilon_comparison" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -1229,6 +1261,17 @@ python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablatio
   --variants candidate_learning_rate_0_003_baseline,candidate_learning_rate_0_006 \
   --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_constant_learning_rate_ablation
+
+# Leduc Experiment 32 — long-node candidate epsilon smoke test
+python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_long_node_epsilon_comparison
 ```
 
 For local smoke tests across all experiments:

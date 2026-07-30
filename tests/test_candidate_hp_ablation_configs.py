@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import importlib
 
 import pytest
@@ -11,7 +12,12 @@ from experiments.leduc_poker.dream_architecture_candidate_comparison.config impo
     ADVANTAGE_CANDIDATE_LAYERS,
     POLICY_BASELINE_LAYERS,
 )
-from experiments.leduc_poker.dream_candidate_hp_ablation_common import DEFAULT_EPSILON, DEFAULT_SEEDS
+from experiments.leduc_poker.dream_candidate_hp_ablation_common import (
+    DEFAULT_EPSILON,
+    DEFAULT_SEEDS,
+    add_common_arguments,
+    config_from_args,
+)
 
 
 EXPERIMENT_SPECS = [
@@ -117,3 +123,27 @@ def test_candidate_hp_ablation_metadata(
         assert variant_config["policy_network_layers"] == POLICY_BASELINE_LAYERS
         assert variant_config["advantage_network_layers"] == ADVANTAGE_CANDIDATE_LAYERS
         assert variant_config["baseline_network_layers"] == POLICY_BASELINE_LAYERS
+
+
+@pytest.mark.parametrize(
+    "module_name,variants_name,baseline_variant,treatment_key,expected_values",
+    EXPERIMENT_SPECS,
+)
+def test_candidate_hp_ablation_cli_reuses_fixed_baseline_by_default(
+    module_name: str,
+    variants_name: str,
+    baseline_variant: str,
+    treatment_key: str,
+    expected_values: list,
+):
+    module = importlib.import_module(module_name)
+    parser = add_common_arguments(argparse.ArgumentParser())
+
+    default_config = config_from_args(parser.parse_args([]), module.EXPERIMENT_CONFIG)
+    assert default_config["fixed_baseline"]["enabled"] is True
+
+    retrain_config = config_from_args(
+        parser.parse_args(["--train-baseline"]),
+        module.EXPERIMENT_CONFIG,
+    )
+    assert retrain_config["fixed_baseline"]["enabled"] is False
