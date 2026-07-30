@@ -63,6 +63,7 @@ BASE_CANDIDATE_HP_CONFIG = {
     "policy_network_train_steps": 100,
     "advantage_network_train_steps": 50,
     "baseline_network_train_steps": 50,
+    "baseline_network_train_every": 1,
     "policy_network_layers": list(POLICY_BASELINE_LAYERS),
     "advantage_network_layers": list(ADVANTAGE_CANDIDATE_LAYERS),
     "baseline_network_layers": list(POLICY_BASELINE_LAYERS),
@@ -403,6 +404,7 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> argparse.ArgumentPa
     parser.add_argument("--policy-network-train-steps", type=int, default=None)
     parser.add_argument("--advantage-network-train-steps", type=int, default=None)
     parser.add_argument("--baseline-network-train-steps", type=int, default=None)
+    parser.add_argument("--baseline-network-train-every", type=int, default=None)
     parser.add_argument("--policy-network-train-every", type=int, default=None)
     parser.add_argument("--batch-size-advantage", type=int, default=None)
     parser.add_argument("--batch-size-strategy", type=int, default=None)
@@ -454,6 +456,8 @@ def config_from_args(args: argparse.Namespace, base_config: Dict) -> Dict:
         config["advantage_network_train_steps"] = int(args.advantage_network_train_steps)
     if args.baseline_network_train_steps is not None:
         config["baseline_network_train_steps"] = int(args.baseline_network_train_steps)
+    if args.baseline_network_train_every is not None:
+        config["baseline_network_train_every"] = int(args.baseline_network_train_every)
     if args.batch_size_advantage is not None:
         config["batch_size_advantage"] = int(args.batch_size_advantage)
     if args.batch_size_strategy is not None:

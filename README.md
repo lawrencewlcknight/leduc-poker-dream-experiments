@@ -154,7 +154,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_candidate_long_node_epsilon_comparison/ # Experiment 32
+│       ├── dream_candidate_baseline_training_cadence_ablation/ # Experiment 32
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_candidate_long_node_epsilon_comparison/ # Experiment 33
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -431,6 +435,22 @@ Starts from the architecture-selected candidate and varies only the constant opt
 
 **Question:** does the candidate baseline prefer a slower or faster fixed optimiser step size once learning-rate decay has already been ruled out?
 
+### 32. DREAM candidate baseline-training cadence ablation
+
+[`experiments/leduc_poker/dream_candidate_baseline_training_cadence_ablation/`](experiments/leduc_poker/dream_candidate_baseline_training_cadence_ablation/README.md)
+
+Starts from the architecture-selected candidate and varies only `baseline_network_train_every`, comparing learned-baseline training every `1`, `5`, `10`, `25`, and `50` DREAM iterations. The `every 1` comparator is reused from the tracked Experiment 22 candidate artifact by default.
+
+**Question:** does DREAM need to refit the learned Q-baseline on every iteration, or can a stale control variate retain most of the variance-reduction benefit while sharply reducing wall-clock time?
+
+### 33. DREAM long-node candidate epsilon comparison
+
+[`experiments/leduc_poker/dream_candidate_long_node_epsilon_comparison/`](experiments/leduc_poker/dream_candidate_long_node_epsilon_comparison/README.md)
+
+Trains the architecture-selected candidate and the same configuration with `epsilon=0.20` over approximately `15m` nodes touched per seed.
+
+**Question:** does the stronger exploration setting remain preferable under a substantially longer training horizon?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -545,18 +565,21 @@ python -m experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.
 # Experiment 31 — candidate constant learning-rate ablation
 python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.run
 
-# Experiment 32 — long-node candidate epsilon comparison
+# Experiment 32 — candidate baseline-training cadence ablation
+python -m experiments.leduc_poker.dream_candidate_baseline_training_cadence_ablation.run
+
+# Experiment 33 — long-node candidate epsilon comparison
 python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run
 ```
 
-Experiments 23--31 reuse the tracked Experiment 22 candidate-architecture
+Experiments 23--32 reuse the tracked Experiment 22 candidate-architecture
 baseline artifact as their comparator by default. This avoids retraining the
 unchanged baseline arm in each ablation. Pass `--train-baseline` only when you
 intentionally want to regenerate the comparator for a debugging run. The full
 experiment commands above do not pass `--train-baseline`, so they do not train
 the baseline arm.
 
-Experiment 32 is different: it intentionally trains both long-node variants over
+Experiment 33 is different: it intentionally trains both long-node variants over
 five seeds and does not reuse a fixed baseline artifact.
 
 Some smoke-test examples below pass `--train-baseline` explicitly. This is only
@@ -983,9 +1006,28 @@ the GCP environment variables from
   "4000" \
   "16000"
 
-# Leduc Experiment 32 — long-node candidate epsilon smoke test on GCP
+# Leduc Experiment 32 — candidate baseline-training cadence smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp32-long-node-epsilon-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp32-baseline-cadence-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_baseline_training_cadence_ablation.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --variants candidate_baseline_every_1_baseline,candidate_baseline_every_5 \
+    --train-baseline \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_baseline_training_cadence_ablation" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 33 — long-node candidate epsilon smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp33-long-node-epsilon-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run \
     --seeds 1234 \
     --iterations 3 \
@@ -1262,7 +1304,20 @@ python -m experiments.leduc_poker.dream_candidate_constant_learning_rate_ablatio
   --train-baseline \
   --output-root outputs/smoke_tests/dream_candidate_constant_learning_rate_ablation
 
-# Leduc Experiment 32 — long-node candidate epsilon smoke test
+# Leduc Experiment 32 — candidate baseline-training cadence smoke test
+python -m experiments.leduc_poker.dream_candidate_baseline_training_cadence_ablation.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --variants candidate_baseline_every_1_baseline,candidate_baseline_every_5 \
+  --train-baseline \
+  --output-root outputs/smoke_tests/dream_candidate_baseline_training_cadence_ablation
+
+# Leduc Experiment 33 — long-node candidate epsilon smoke test
 python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run \
   --seeds 1234 \
   --iterations 3 \

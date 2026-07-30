@@ -95,6 +95,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         advantage_network_train_steps: int = 100,
         policy_network_train_steps: int = 200,
         baseline_network_train_steps: int = 100,
+        baseline_network_train_every: int = 1,
         policy_network_train_every: int = 25,
         compute_exploitability: bool = True,
         game_value_player_0: Optional[float] = None,
@@ -140,6 +141,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._advantage_network_train_steps = int(advantage_network_train_steps)
         self._policy_network_train_steps = int(policy_network_train_steps)
         self._baseline_network_train_steps = int(baseline_network_train_steps)
+        self._baseline_network_train_every = int(baseline_network_train_every)
+        if self._baseline_network_train_every <= 0:
+            raise ValueError("baseline_network_train_every must be positive")
         self._policy_network_train_every = int(policy_network_train_every)
         self._compute_exploitability = bool(compute_exploitability)
         self._game_value_player_0 = (
@@ -361,9 +365,16 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 advantage_start = time.perf_counter()
                 self._last_advantage_loss[traverser] = self._learn_advantage_network(traverser)
                 self._cumulative_advantage_training_seconds += time.perf_counter() - advantage_start
-                baseline_start = time.perf_counter()
-                self._last_baseline_loss[traverser] = self._learn_baseline_network(traverser)
-                self._cumulative_baseline_training_seconds += time.perf_counter() - baseline_start
+                train_baseline_now = (
+                    iteration == 1
+                    or iteration % self._baseline_network_train_every == 0
+                )
+                if train_baseline_now:
+                    baseline_start = time.perf_counter()
+                    self._last_baseline_loss[traverser] = self._learn_baseline_network(traverser)
+                    self._cumulative_baseline_training_seconds += (
+                        time.perf_counter() - baseline_start
+                    )
 
             if mode == "intermittent":
                 train_policy_now = (
@@ -427,6 +438,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "last_target_clip_fraction": list(self._last_target_clip_fraction),
             "policy_training_events": int(self._policy_training_events),
             "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
+            "baseline_network_train_every": int(self._baseline_network_train_every),
             "learning_rate_schedule": self._learning_rate_schedule,
             "learning_rate_end": float(self._learning_rate_end),
             "current_learning_rate": float(self._current_learning_rate),
@@ -504,6 +516,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         )
         self._policy_training_events = int(state.get("policy_training_events", 0))
         self._policy_gradient_steps_total = int(state.get("policy_gradient_steps_total", 0))
+        self._baseline_network_train_every = int(
+            state.get("baseline_network_train_every", self._baseline_network_train_every)
+        )
         self._learning_rate_schedule = str(state.get("learning_rate_schedule", self._learning_rate_schedule))
         self._learning_rate_end = float(state.get("learning_rate_end", self._learning_rate_end))
         self._current_learning_rate = float(state.get("current_learning_rate", self._current_learning_rate))
@@ -938,6 +953,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "policy_grad_norm": float(self._last_policy_grad_norm),
             "policy_training_events": int(self._policy_training_events),
             "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
+            "baseline_network_train_every": int(self._baseline_network_train_every),
             "strategy_buffer_size": int(len(self._strategy_memories)),
             "advantage_buffer_size_player_0": int(len(self._advantage_memories[0])),
             "advantage_buffer_size_player_1": int(len(self._advantage_memories[1])),

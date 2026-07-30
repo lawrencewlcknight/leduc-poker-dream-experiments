@@ -1,4 +1,4 @@
-"""Configuration checks for Experiment 32 long-node DREAM epsilon comparison."""
+"""Configuration checks for Experiment 33 long-node DREAM epsilon comparison."""
 
 import argparse
 

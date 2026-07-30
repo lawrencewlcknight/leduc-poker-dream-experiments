@@ -1,4 +1,4 @@
-# DREAM candidate long-node epsilon comparison (Experiment 32)
+# DREAM candidate long-node epsilon comparison (Experiment 33)
 
 This experiment tests the architecture-selected DREAM candidate under a much
 larger fixed node budget. It compares the current candidate before the
@@ -42,7 +42,7 @@ python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.r
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp32-long-node-epsilon-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "leduc-dream-exp33-long-node-epsilon-smoke-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run \
     --seeds 1234 \
     --iterations 3 \
