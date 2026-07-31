@@ -158,7 +158,19 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_candidate_long_node_epsilon_comparison/ # Experiment 33
+│       ├── dream_candidate_long_node_epsilon_comparison/ # Experiment 33
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_epsilon_baseline50_comparison/ # Experiment 34
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_900_traversal_long_node/ # Experiment 35
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_candidate_epsilon020_900_traversal_long_node/ # Experiment 36
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -451,6 +463,30 @@ Trains the architecture-selected candidate and the same configuration with `epsi
 
 **Question:** does the stronger exploration setting remain preferable under a substantially longer training horizon?
 
+### 34. DREAM candidate epsilon comparison with sparse baseline training
+
+[`experiments/leduc_poker/dream_candidate_epsilon_baseline50_comparison/`](experiments/leduc_poker/dream_candidate_epsilon_baseline50_comparison/README.md)
+
+Starts from the architecture-selected candidate, sets `baseline_network_train_every=50` in both arms, and compares `epsilon=0.06` against `epsilon=0.20` over three seeds.
+
+**Question:** does the higher-exploration candidate remain preferable when the learned Q-baseline is refit only sparsely?
+
+### 35. DREAM candidate 900-traversal long-node run
+
+[`experiments/leduc_poker/dream_candidate_900_traversal_long_node/`](experiments/leduc_poker/dream_candidate_900_traversal_long_node/README.md)
+
+Trains the architecture-selected candidate with `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, targeting roughly `15m` nodes touched per seed.
+
+**Question:** does the higher per-iteration traversal budget from the DREAM paper improve long-run convergence when the total node budget is held near the long-run target?
+
+### 36. DREAM epsilon-0.20 900-traversal long-node run
+
+[`experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_long_node/`](experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_long_node/README.md)
+
+Trains the architecture-selected candidate with `epsilon=0.20` and `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, again targeting roughly `15m` nodes touched per seed.
+
+**Question:** does the stronger exploration setting remain beneficial when combined with the higher per-iteration traversal budget under the same long-run node target?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -570,17 +606,26 @@ python -m experiments.leduc_poker.dream_candidate_baseline_training_cadence_abla
 
 # Experiment 33 — long-node candidate epsilon comparison
 python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.run
+
+# Experiment 34 — candidate epsilon comparison with baseline cadence 50
+python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run
+
+# Experiment 35 — 900-traversal long-node candidate run
+python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run
+
+# Experiment 36 — epsilon-0.20 900-traversal long-node candidate run
+python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run
 ```
 
 Experiments 23--32 reuse the tracked Experiment 22 candidate-architecture
 baseline artifact as their comparator by default. This avoids retraining the
 unchanged baseline arm in each ablation. Pass `--train-baseline` only when you
 intentionally want to regenerate the comparator for a debugging run. The full
-experiment commands above do not pass `--train-baseline`, so they do not train
-the baseline arm.
+commands for these ablations do not pass `--train-baseline`, so they reuse the
+cached comparator.
 
-Experiment 33 is different: it intentionally trains both long-node variants over
-five seeds and does not reuse a fixed baseline artifact.
+Experiments 33--36 are different: they intentionally train all configured
+variants and do not reuse a fixed baseline artifact.
 
 Some smoke-test examples below pass `--train-baseline` explicitly. This is only
 to exercise both training arms under a tiny three-iteration budget; it is not the
@@ -1041,6 +1086,57 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 34 — candidate epsilon baseline-cadence-50 smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp34-epsilon-baseline50-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon_baseline50_comparison" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 35 — 900-traversal long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp35-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_900_traversal_long_node" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "leduc-dream-exp36-epsilon020-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon020_900_traversal_long_node" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -1327,6 +1423,39 @@ python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.r
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_candidate_long_node_epsilon_comparison
+
+# Leduc Experiment 34 — candidate epsilon baseline-cadence-50 smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon_baseline50_comparison
+
+# Leduc Experiment 35 — 900-traversal long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_900_traversal_long_node
+
+# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon020_900_traversal_long_node
 ```
 
 For local smoke tests across all experiments:

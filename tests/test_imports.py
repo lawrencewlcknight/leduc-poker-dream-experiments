@@ -18,11 +18,14 @@ def test_import_shared_modules():
 
 def test_import_experiment_configs():
     import experiments.leduc_poker.dream_architecture_candidate_comparison.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_900_traversal_long_node.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_advantage_batch_size_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_advantage_fitting_steps_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_baseline_training_cadence_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_baseline_replay_capacity_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_constant_learning_rate_ablation.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.config  # noqa: F401
+    import experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.config  # noqa: F401
     import experiments.leduc_poker.dream_baseline_network_budget_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_policy_extraction_budget_ablation.config  # noqa: F401
