@@ -35,7 +35,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp34-epsilon-baseline50-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp34-eb50-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run \
     --seeds 1234 \
     --iterations 3 \

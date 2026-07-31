@@ -24,6 +24,12 @@ MAX_RUN_SECONDS="${4:-21600}"
 CPU_MILLI="${5:-4000}"
 MEMORY_MIB="${6:-16000}"
 
+if [[ ! "${JOB_NAME}" =~ ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$ ]]; then
+  echo "Invalid GCP Batch job name: ${JOB_NAME}" >&2
+  echo "Job names must be 1-63 characters, start with a lowercase letter, contain only lowercase letters, digits, and hyphens, and end with a lowercase letter or digit." >&2
+  exit 2
+fi
+
 : "${PROJECT_ID:?Set PROJECT_ID first}"
 : "${REGION:?Set REGION first}"
 : "${BUCKET:?Set BUCKET first}"

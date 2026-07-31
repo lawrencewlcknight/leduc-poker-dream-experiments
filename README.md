@@ -1089,7 +1089,7 @@ the GCP environment variables from
 
 # Leduc Experiment 34 — candidate epsilon baseline-cadence-50 smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp34-epsilon-baseline50-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp34-eb50-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run \
     --seeds 1234 \
     --iterations 3 \
@@ -1106,7 +1106,7 @@ the GCP environment variables from
 
 # Leduc Experiment 35 — 900-traversal long-node smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp35-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp35-t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
     --seeds 1234 \
     --iterations 3 \
@@ -1123,7 +1123,7 @@ the GCP environment variables from
 
 # Leduc Experiment 36 — epsilon-0.20 900-traversal long-node smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp36-epsilon020-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp36-e02t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
     --seeds 1234 \
     --iterations 3 \

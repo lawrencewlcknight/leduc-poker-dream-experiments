@@ -34,7 +34,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp36-epsilon020-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp36-e02t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
     --seeds 1234 \
     --iterations 3 \

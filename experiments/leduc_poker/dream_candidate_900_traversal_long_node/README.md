@@ -35,7 +35,7 @@ python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
 
 ```bash
 ./gcp/submit_batch_experiment.sh \
-  "leduc-dream-exp35-900-traversal-long-node-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "ld-exp35-t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
     --seeds 1234 \
     --iterations 3 \
