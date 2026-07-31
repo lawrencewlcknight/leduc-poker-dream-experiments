@@ -96,6 +96,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         policy_network_train_steps: int = 200,
         baseline_network_train_steps: int = 100,
         baseline_network_train_every: int = 1,
+        compute_baseline_grad_norm_diagnostics: bool = False,
         policy_network_train_every: int = 25,
         compute_exploitability: bool = True,
         game_value_player_0: Optional[float] = None,
@@ -144,6 +145,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._baseline_network_train_every = int(baseline_network_train_every)
         if self._baseline_network_train_every <= 0:
             raise ValueError("baseline_network_train_every must be positive")
+        self._compute_baseline_grad_norm_diagnostics = bool(
+            compute_baseline_grad_norm_diagnostics
+        )
         self._policy_network_train_every = int(policy_network_train_every)
         self._compute_exploitability = bool(compute_exploitability)
         self._game_value_player_0 = (
@@ -210,7 +214,14 @@ class DREAMSolver(policy.Policy if policy is not None else object):
 
         self._advantage_memories = [ReservoirBuffer(self._advantage_memory_capacity) for _ in range(self._num_players)]
         self._strategy_memories = ReservoirBuffer(self._strategy_memory_capacity)
-        self._baseline_replays = [CircularReplay(self._baseline_memory_capacity) for _ in range(self._num_players)]
+        self._baseline_replays = [
+            CircularReplay(
+                self._baseline_memory_capacity,
+                info_state_size=self._info_state_size,
+                num_actions=self._num_actions,
+            )
+            for _ in range(self._num_players)
+        ]
 
         self._loss_mse = nn.MSELoss(reduction="mean")
         self._iteration = 0
@@ -439,6 +450,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "policy_training_events": int(self._policy_training_events),
             "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
             "baseline_network_train_every": int(self._baseline_network_train_every),
+            "compute_baseline_grad_norm_diagnostics": bool(
+                self._compute_baseline_grad_norm_diagnostics
+            ),
             "learning_rate_schedule": self._learning_rate_schedule,
             "learning_rate_end": float(self._learning_rate_end),
             "current_learning_rate": float(self._current_learning_rate),
@@ -518,6 +532,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._policy_gradient_steps_total = int(state.get("policy_gradient_steps_total", 0))
         self._baseline_network_train_every = int(
             state.get("baseline_network_train_every", self._baseline_network_train_every)
+        )
+        self._compute_baseline_grad_norm_diagnostics = bool(
+            state.get(
+                "compute_baseline_grad_norm_diagnostics",
+                self._compute_baseline_grad_norm_diagnostics,
+            )
         )
         self._learning_rate_schedule = str(state.get("learning_rate_schedule", self._learning_rate_schedule))
         self._learning_rate_end = float(state.get("learning_rate_end", self._learning_rate_end))
@@ -709,6 +729,46 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 pi[a] = 1.0 / float(len(legal_actions))
         return pi
 
+    def _regret_matching_policy_batch(
+        self,
+        info_states: np.ndarray,
+        legal_action_masks: np.ndarray,
+        player: int,
+    ) -> np.ndarray:
+        info_states = np.asarray(info_states, dtype=np.float32)
+        legal_action_masks = np.asarray(legal_action_masks, dtype=bool)
+        if info_states.shape[0] == 0:
+            return np.zeros((0, self._num_actions), dtype=np.float32)
+
+        with torch.no_grad():
+            raw_advantages = (
+                self._advantage_networks[int(player)](torch.from_numpy(info_states))
+                .detach()
+                .cpu()
+                .numpy()
+            )
+        positive = np.maximum(raw_advantages, 0.0).astype(np.float32)
+        legal_float = legal_action_masks.astype(np.float32)
+        positive *= legal_float
+        denom = positive.sum(axis=1, keepdims=True)
+
+        policies = np.zeros_like(positive, dtype=np.float32)
+        positive_rows = denom[:, 0] > 0.0
+        if np.any(positive_rows):
+            policies[positive_rows] = positive[positive_rows] / denom[positive_rows]
+
+        fallback_rows = ~positive_rows
+        if np.any(fallback_rows):
+            legal_counts = legal_float[fallback_rows].sum(axis=1, keepdims=True)
+            fallback = np.divide(
+                legal_float[fallback_rows],
+                np.maximum(legal_counts, 1.0),
+                out=np.zeros_like(legal_float[fallback_rows], dtype=np.float32),
+                where=legal_counts > 0.0,
+            )
+            policies[fallback_rows] = fallback
+        return policies.astype(np.float32)
+
     def _epsilon_mixed_sampling_policy(self, pi: np.ndarray, legal_actions: Sequence[int]) -> np.ndarray:
         sigma = np.zeros(self._num_actions, dtype=np.float32)
         if not legal_actions:
@@ -802,31 +862,44 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         net = self._baseline_networks[traverser]
         opt = self._optimizer_baselines[traverser]
         last_loss = float("nan")
-        for _ in range(self._baseline_network_train_steps):
-            samples = self._baseline_replays[traverser].sample(self._batch_size_baseline)
-            preds: List[torch.Tensor] = []
-            targets: List[torch.Tensor] = []
-            for tr in samples:
-                s = torch.from_numpy(np.array(tr.info_state, dtype=np.float32, copy=True)[None, :])
-                q_values = net(s)[0]
-                preds.append(q_values[int(tr.action)])
-                if bool(tr.done):
-                    targets.append(torch.tensor(float(tr.reward), dtype=torch.float32))
-                    continue
-                next_info = np.array(tr.next_info_state, dtype=np.float32, copy=True)
-                next_legal = list(tr.next_legal_actions)
-                next_player = int(tr.next_player)
-                pi_next = self._regret_matching_policy(next_info, next_legal, next_player)
+        for step_idx in range(self._baseline_network_train_steps):
+            batch = self._baseline_replays[traverser].sample_baseline_batch(
+                self._batch_size_baseline
+            )
+            x = torch.from_numpy(batch.info_states)
+            actions = torch.from_numpy(batch.actions).long().reshape(-1, 1)
+
+            expected_next = np.zeros_like(batch.rewards, dtype=np.float32)
+            nonterminal = ~batch.dones
+            if np.any(nonterminal):
                 with torch.no_grad():
-                    q_next = net(torch.from_numpy(next_info[None, :]))[0].cpu().numpy()
-                exp_next = sum(float(pi_next[a]) * float(q_next[a]) for a in next_legal)
-                targets.append(torch.tensor(float(tr.reward) + exp_next, dtype=torch.float32))
-            pred_t = torch.stack(preds)
-            target_t = torch.stack(targets)
+                    q_next_all = (
+                        net(torch.from_numpy(batch.next_info_states))
+                        .detach()
+                        .cpu()
+                        .numpy()
+                    )
+                for next_player in range(self._num_players):
+                    rows = nonterminal & (batch.next_players == next_player)
+                    if not np.any(rows):
+                        continue
+                    next_policies = self._regret_matching_policy_batch(
+                        batch.next_info_states[rows],
+                        batch.next_legal_action_masks[rows],
+                        next_player,
+                    )
+                    expected_next[rows] = np.sum(next_policies * q_next_all[rows], axis=1)
+
+            target_t = torch.from_numpy((batch.rewards + expected_next).astype(np.float32))
             opt.zero_grad()
+            pred_t = net(x).gather(1, actions).squeeze(1)
             loss = self._loss_mse(pred_t, target_t)
             loss.backward()
-            self._last_baseline_grad_norm[traverser] = grad_norm(net.parameters())
+            if (
+                self._compute_baseline_grad_norm_diagnostics
+                and step_idx == self._baseline_network_train_steps - 1
+            ):
+                self._last_baseline_grad_norm[traverser] = grad_norm(net.parameters())
             opt.step()
             last_loss = float(loss.detach().cpu().item())
         return last_loss
@@ -1035,8 +1108,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
     def _baseline_replay_summary(self, max_samples_per_player: int = 5000) -> Dict[str, float]:
         rewards = []
         for p in range(self._num_players):
-            for tr in self._baseline_replays[p].sample_up_to(max_samples_per_player):
-                rewards.append(float(tr.reward))
+            rewards.extend(
+                self._baseline_replays[p]
+                .baseline_rewards_sample_up_to(max_samples_per_player)
+                .astype(np.float64)
+                .tolist()
+            )
         return {
             "baseline_reward_mean_sampled": safe_mean(rewards),
             "baseline_reward_variance_sampled": float(np.var(rewards)) if len(rewards) else np.nan,

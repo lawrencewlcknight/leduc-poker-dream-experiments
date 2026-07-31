@@ -107,6 +107,10 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
         policy_network_train_steps=config["policy_network_train_steps"],
         baseline_network_train_steps=config["baseline_network_train_steps"],
         baseline_network_train_every=config.get("baseline_network_train_every", 1),
+        compute_baseline_grad_norm_diagnostics=config.get(
+            "compute_baseline_grad_norm_diagnostics",
+            False,
+        ),
         policy_network_train_every=config["policy_network_train_every"],
         compute_exploitability=config["compute_exploitability"],
         game_value_player_0=config.get("game_value_player_0"),

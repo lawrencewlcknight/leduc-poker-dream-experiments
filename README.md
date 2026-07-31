@@ -170,7 +170,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_candidate_epsilon020_900_traversal_long_node/ # Experiment 36
+│       ├── dream_candidate_epsilon020_900_traversal_long_node/ # Experiment 36
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_vectorized_baseline_equivalence/ # Experiment 37
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -487,6 +491,14 @@ Trains the architecture-selected candidate with `epsilon=0.20` and `900` outcome
 
 **Question:** does the stronger exploration setting remain beneficial when combined with the higher per-iteration traversal budget under the same long-run node target?
 
+### 37. DREAM vectorized-baseline equivalence check
+
+[`experiments/leduc_poker/dream_vectorized_baseline_equivalence/`](experiments/leduc_poker/dream_vectorized_baseline_equivalence/README.md)
+
+Reruns the Experiment 22 architecture-selected candidate with tensorized learned-baseline replay and the vectorized baseline learner, while reusing the archived Experiment 22 candidate outputs as the original-implementation comparator.
+
+**Question:** does the vectorized learned-baseline implementation preserve exploitability and average-policy value while reducing wall-clock and learned-baseline training time?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -615,14 +627,17 @@ python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run
 
 # Experiment 36 — epsilon-0.20 900-traversal long-node candidate run
 python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run
+
+# Experiment 37 — vectorized-baseline equivalence check
+python -m experiments.leduc_poker.dream_vectorized_baseline_equivalence.run
 ```
 
-Experiments 23--32 reuse the tracked Experiment 22 candidate-architecture
-baseline artifact as their comparator by default. This avoids retraining the
-unchanged baseline arm in each ablation. Pass `--train-baseline` only when you
-intentionally want to regenerate the comparator for a debugging run. The full
-commands for these ablations do not pass `--train-baseline`, so they reuse the
-cached comparator.
+Experiments 23--32 and 37 reuse the tracked Experiment 22
+candidate-architecture baseline artifact as their comparator by default. This
+avoids retraining the unchanged baseline arm in each ablation. Pass
+`--train-baseline` only when you intentionally want to regenerate the comparator
+for a debugging run. The full commands for these ablations do not pass
+`--train-baseline`, so they reuse the cached comparator.
 
 Experiments 33--36 are different: they intentionally train all configured
 variants and do not reuse a fixed baseline artifact.
@@ -1137,6 +1152,23 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 37 — vectorized-baseline equivalence smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp37-vbleq-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_vectorized_baseline_equivalence.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_vectorized_baseline_equivalence" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -1456,6 +1488,17 @@ python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_candidate_epsilon020_900_traversal_long_node
+
+# Leduc Experiment 37 — vectorized-baseline equivalence smoke test
+python -m experiments.leduc_poker.dream_vectorized_baseline_equivalence.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_vectorized_baseline_equivalence
 ```
 
 For local smoke tests across all experiments:

@@ -12,6 +12,7 @@ import os
 import time
 from typing import Any, Dict, List
 
+import numpy as np
 import torch
 
 import pyspiel
@@ -283,13 +284,75 @@ class ParallelDREAMSolver(DREAMSolver):
     @staticmethod
     def _combine_circular_states(states: List[Dict], capacity: int) -> CircularReplay:
         combined = CircularReplay(int(capacity))
-        data = []
+        tensor_chunks = []
+        legacy_data = []
         for state in states:
-            data.extend(list(state.get("data", [])))
-        if len(data) > int(capacity):
-            data = data[-int(capacity) :]
-        combined._data = data  # pylint: disable=protected-access
-        combined._idx = 0  # pylint: disable=protected-access
+            if state.get("tensorized_baseline", False) or "info_states" in state:
+                size = int(state.get("size", len(state.get("actions", []))))
+                if size <= 0:
+                    continue
+                tensor_chunks.append(
+                    {
+                        "info_states": np.asarray(state["info_states"], dtype=np.float32)[:size],
+                        "actions": np.asarray(state["actions"], dtype=np.int64)[:size],
+                        "rewards": np.asarray(state["rewards"], dtype=np.float32)[:size],
+                        "next_info_states": np.asarray(
+                            state["next_info_states"],
+                            dtype=np.float32,
+                        )[:size],
+                        "next_legal_action_masks": np.asarray(
+                            state["next_legal_action_masks"],
+                            dtype=bool,
+                        )[:size],
+                        "next_players": np.asarray(state["next_players"], dtype=np.int64)[:size],
+                        "dones": np.asarray(state["dones"], dtype=bool)[:size],
+                        "info_state_size": int(state["info_state_size"]),
+                        "num_actions": int(state["num_actions"]),
+                    }
+                )
+            else:
+                legacy_data.extend(list(state.get("data", [])))
+
+        if tensor_chunks:
+            merged = {
+                key: np.concatenate([chunk[key] for chunk in tensor_chunks], axis=0)
+                for key in (
+                    "info_states",
+                    "actions",
+                    "rewards",
+                    "next_info_states",
+                    "next_legal_action_masks",
+                    "next_players",
+                    "dones",
+                )
+            }
+            if len(merged["actions"]) > int(capacity):
+                keep = slice(len(merged["actions"]) - int(capacity), len(merged["actions"]))
+                merged = {key: value[keep] for key, value in merged.items()}
+            combined.load_state_dict(
+                {
+                    "capacity": int(capacity),
+                    "idx": 0,
+                    "tensorized_baseline": True,
+                    "size": int(len(merged["actions"])),
+                    "info_state_size": int(tensor_chunks[0]["info_state_size"]),
+                    "num_actions": int(tensor_chunks[0]["num_actions"]),
+                    **merged,
+                }
+            )
+            for element in legacy_data:
+                combined.add(element)
+            return combined
+
+        if len(legacy_data) > int(capacity):
+            legacy_data = legacy_data[-int(capacity) :]
+        combined.load_state_dict(
+            {
+                "capacity": int(capacity),
+                "data": list(legacy_data),
+                "idx": 0,
+            }
+        )
         return combined
 
     def _checkpoint_metrics(self, start_time: float) -> Dict:
