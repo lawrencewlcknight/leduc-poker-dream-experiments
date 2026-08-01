@@ -1,15 +1,17 @@
 # DREAM candidate 900-traversal long-node run (Experiment 35)
 
-This experiment trains the Experiment 22 architecture-selected DREAM candidate
-with `900` outcome-sampling traversals per player per iteration. The run uses
-`1,300` DREAM iterations, which gives approximately the same traversal-unit
-budget as the existing `160`-traversal, `7,300`-iteration long-node run and is
-intended to touch roughly `15m` nodes per seed.
+This experiment trains two versions of the Experiment 22 architecture-selected
+DREAM candidate with `900` outcome-sampling traversals per player per iteration.
+Both arms use the vectorized learned-baseline implementation and run for `1,300`
+DREAM iterations, which gives approximately the same traversal-unit budget as
+the existing `160`-traversal, `7,300`-iteration long-node run and is intended to
+touch roughly `15m` nodes per seed.
 
-The default run preserves the Experiment 22 candidate settings: five seeds,
+The comparator arm preserves the Experiment 22 candidate settings: five seeds,
 `epsilon=0.06`, policy and learned-baseline networks `[32, 32]`, advantage
 networks `[128, 128]`, linear average-strategy weighting, policy training every
-`25` iterations, and learned-baseline training every iteration.
+`25` iterations, and learned-baseline training every iteration. The second arm
+changes only the learned-baseline cadence to every `50` DREAM iterations.
 
 ## Run
 

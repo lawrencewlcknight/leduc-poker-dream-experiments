@@ -9,6 +9,7 @@ from experiments.leduc_poker.dream_candidate_hp_ablation_common import (
 
 
 CANDIDATE_900_VARIANT = "candidate_traversals_900_long_nodes"
+CANDIDATE_900_BASELINE50_VARIANT = "candidate_traversals_900_baseline_every_50_long_nodes"
 TARGET_NODES_TOUCHED = 15_000_000
 LONG_NODE_NUM_TRAVERSALS = 900
 LONG_NODE_NUM_ITERATIONS = 1_300
@@ -17,16 +18,29 @@ LONG_NODE_NUM_ITERATIONS = 1_300
 CANDIDATE_900_VARIANTS = [
     make_variant(
         CANDIDATE_900_VARIANT,
-        "900 traversals",
+        "900 traversals, baseline every 1",
         hp_family="long_node_traversal_budget",
-        hp_value="num_traversals=900; target_nodes_touched=15m",
+        hp_value="num_traversals=900; baseline_network_train_every=1; target_nodes_touched=15m",
         description=(
             "Experiment 22 architecture-selected DREAM candidate trained with "
-            "900 outcome-sampling traversals per player per iteration. The "
-            "iteration count is set to keep the total node budget close to the "
-            "15m-node long-run target."
+            "900 outcome-sampling traversals per player per iteration and "
+            "learned-baseline training on every DREAM iteration."
         ),
         num_traversals=LONG_NODE_NUM_TRAVERSALS,
+        baseline_network_train_every=1,
+    ),
+    make_variant(
+        CANDIDATE_900_BASELINE50_VARIANT,
+        "900 traversals, baseline every 50",
+        hp_family="long_node_traversal_budget",
+        hp_value="num_traversals=900; baseline_network_train_every=50; target_nodes_touched=15m",
+        description=(
+            "Experiment 22 architecture-selected DREAM candidate trained with "
+            "900 outcome-sampling traversals per player per iteration and "
+            "sparse learned-baseline training every 50 DREAM iterations."
+        ),
+        num_traversals=LONG_NODE_NUM_TRAVERSALS,
+        baseline_network_train_every=50,
     ),
 ]
 
@@ -39,12 +53,14 @@ EXPERIMENT_CONFIG = make_candidate_hp_experiment_config(
     output_subdir="dream_candidate_900_traversal_long_node",
     baseline_variant=CANDIDATE_900_VARIANT,
     variants=CANDIDATE_900_VARIANTS,
-    treatment_keys=["num_traversals"],
+    treatment_keys=["num_traversals", "baseline_network_train_every"],
 )
 EXPERIMENT_CONFIG.update(
     {
         "num_iterations": LONG_NODE_NUM_ITERATIONS,
         "num_traversals": LONG_NODE_NUM_TRAVERSALS,
+        "baseline_network_train_every": 1,
+        "compute_baseline_grad_norm_diagnostics": False,
         "seeds": list(DEFAULT_SEEDS_5),
         "target_nodes_touched": TARGET_NODES_TOUCHED,
         "fixed_baseline": {"enabled": False},

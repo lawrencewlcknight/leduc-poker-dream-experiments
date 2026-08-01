@@ -174,7 +174,27 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_vectorized_baseline_equivalence/ # Experiment 37
+│       ├── dream_vectorized_baseline_equivalence/ # Experiment 37
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_epsilon_baseline50_long_node_comparison/ # Experiment 38
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_900_traversal_baseline1000_long_node/ # Experiment 39
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_epsilon020_900_traversal_baseline1000_long_node/ # Experiment 40
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       ├── dream_candidate_long_node_run/ # Experiment 41
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_candidate_epsilon020_long_node_run/ # Experiment 42
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -475,21 +495,21 @@ Starts from the architecture-selected candidate, sets `baseline_network_train_ev
 
 **Question:** does the higher-exploration candidate remain preferable when the learned Q-baseline is refit only sparsely?
 
-### 35. DREAM candidate 900-traversal long-node run
+### 35. DREAM candidate 900-traversal long-node cadence comparison
 
 [`experiments/leduc_poker/dream_candidate_900_traversal_long_node/`](experiments/leduc_poker/dream_candidate_900_traversal_long_node/README.md)
 
-Trains the architecture-selected candidate with `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, targeting roughly `15m` nodes touched per seed.
+Trains two vectorized DREAM variants with the architecture-selected candidate settings and `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, targeting roughly `15m` nodes touched per seed. The comparator preserves learned-baseline training every iteration; the treatment changes only the learned-baseline cadence to every `50` iterations.
 
-**Question:** does the higher per-iteration traversal budget from the DREAM paper improve long-run convergence when the total node budget is held near the long-run target?
+**Question:** does the higher per-iteration traversal budget from the DREAM paper remain effective when learned-baseline refitting is made sparse enough to reduce the dominant training cost?
 
-### 36. DREAM epsilon-0.20 900-traversal long-node run
+### 36. DREAM epsilon-0.20 900-traversal long-node cadence comparison
 
 [`experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_long_node/`](experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_long_node/README.md)
 
-Trains the architecture-selected candidate with `epsilon=0.20` and `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, again targeting roughly `15m` nodes touched per seed.
+Trains two vectorized DREAM variants with `epsilon=0.20`, the architecture-selected candidate settings, and `900` outcome-sampling traversals per player per iteration for `1,300` DREAM iterations, again targeting roughly `15m` nodes touched per seed. The comparator preserves learned-baseline training every iteration; the treatment changes only the learned-baseline cadence to every `50` iterations.
 
-**Question:** does the stronger exploration setting remain beneficial when combined with the higher per-iteration traversal budget under the same long-run node target?
+**Question:** does the stronger exploration setting remain beneficial under the higher per-iteration traversal budget when learned-baseline refitting is made sparse?
 
 ### 37. DREAM vectorized-baseline equivalence check
 
@@ -498,6 +518,46 @@ Trains the architecture-selected candidate with `epsilon=0.20` and `900` outcome
 Reruns the Experiment 22 architecture-selected candidate with tensorized learned-baseline replay and the vectorized baseline learner, while reusing the archived Experiment 22 candidate outputs as the original-implementation comparator.
 
 **Question:** does the vectorized learned-baseline implementation preserve exploitability and average-policy value while reducing wall-clock and learned-baseline training time?
+
+### 38. DREAM candidate epsilon comparison with sparse baseline training at long-node horizon
+
+[`experiments/leduc_poker/dream_candidate_epsilon_baseline50_long_node_comparison/`](experiments/leduc_poker/dream_candidate_epsilon_baseline50_long_node_comparison/README.md)
+
+Extends Experiment 34 to the long-node horizon using the vectorized learned-baseline implementation. Both arms train the learned baseline every `50` DREAM iterations and keep `160` traversals per player per iteration; the comparison is between `epsilon=0.06` and `epsilon=0.20` over `7,500` iterations, targeting roughly `15m` nodes per seed.
+
+**Question:** does the higher-exploration sparse-baseline configuration remain preferable when trained to the long-node budget?
+
+### 39. DREAM candidate 900-traversal baseline-1000 long-node run
+
+[`experiments/leduc_poker/dream_candidate_900_traversal_baseline1000_long_node/`](experiments/leduc_poker/dream_candidate_900_traversal_baseline1000_long_node/README.md)
+
+Starts from the Experiment 22 architecture-selected candidate and uses the vectorized implementation with `900` traversals per player per iteration and `1000` learned-baseline minibatches per player per iteration. The run keeps learned-baseline training on every DREAM iteration, uses three seeds, and trains for `1,300` iterations, targeting roughly `15m` nodes per seed.
+
+**Question:** does the paper-style high traversal and high baseline-fitting budget produce a stronger long-node DREAM policy under the vectorized implementation?
+
+### 40. DREAM epsilon-0.20 900-traversal baseline-1000 long-node run
+
+[`experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_baseline1000_long_node/`](experiments/leduc_poker/dream_candidate_epsilon020_900_traversal_baseline1000_long_node/README.md)
+
+Keeps the Experiment 39 paper-style traversal and baseline-fitting budget but changes only the exploration rate to `epsilon=0.20`. The run uses three seeds and trains for `1,300` iterations, targeting roughly `15m` nodes per seed.
+
+**Question:** does the higher-exploration setting improve the paper-style high traversal and high learned-baseline fitting budget?
+
+### 41. DREAM candidate long-node run
+
+[`experiments/leduc_poker/dream_candidate_long_node_run/`](experiments/leduc_poker/dream_candidate_long_node_run/README.md)
+
+Trains the Experiment 22 architecture-selected candidate as a dedicated single-arm vectorized run over `7,300` iterations with `160` traversals per player per iteration, targeting roughly `15m` nodes per seed. Experiment 33 already includes this configuration as its `epsilon=0.06` arm, but that experiment also trains the `epsilon=0.20` treatment.
+
+**Question:** how does the Experiment 22 candidate behave when trained alone to the long-node budget without spending compute on an additional comparison arm?
+
+### 42. DREAM epsilon-0.20 candidate long-node run
+
+[`experiments/leduc_poker/dream_candidate_epsilon020_long_node_run/`](experiments/leduc_poker/dream_candidate_epsilon020_long_node_run/README.md)
+
+Replicates Experiment 41 and changes only the exploration rate to `epsilon=0.20`. The run uses the vectorized implementation, `160` traversals per player per iteration, five seeds, and `7,300` iterations, targeting roughly `15m` nodes per seed.
+
+**Question:** does the high-exploration version of the Experiment 22 candidate improve when trained alone to the long-node budget?
 
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
@@ -622,14 +682,29 @@ python -m experiments.leduc_poker.dream_candidate_long_node_epsilon_comparison.r
 # Experiment 34 — candidate epsilon comparison with baseline cadence 50
 python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.run
 
-# Experiment 35 — 900-traversal long-node candidate run
+# Experiment 35 — 900-traversal long-node baseline-cadence comparison
 python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run
 
-# Experiment 36 — epsilon-0.20 900-traversal long-node candidate run
+# Experiment 36 — epsilon-0.20 900-traversal long-node baseline-cadence comparison
 python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run
 
 # Experiment 37 — vectorized-baseline equivalence check
 python -m experiments.leduc_poker.dream_vectorized_baseline_equivalence.run
+
+# Experiment 38 — long-node epsilon comparison with baseline cadence 50
+python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_long_node_comparison.run
+
+# Experiment 39 — 900-traversal baseline-1000 long-node run
+python -m experiments.leduc_poker.dream_candidate_900_traversal_baseline1000_long_node.run
+
+# Experiment 40 — epsilon-0.20 900-traversal baseline-1000 long-node run
+python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_baseline1000_long_node.run
+
+# Experiment 41 — Experiment 22 candidate long-node run
+python -m experiments.leduc_poker.dream_candidate_long_node_run.run
+
+# Experiment 42 — epsilon-0.20 candidate long-node run
+python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run
 ```
 
 Experiments 23--32 and 37 reuse the tracked Experiment 22
@@ -639,7 +714,7 @@ avoids retraining the unchanged baseline arm in each ablation. Pass
 for a debugging run. The full commands for these ablations do not pass
 `--train-baseline`, so they reuse the cached comparator.
 
-Experiments 33--36 are different: they intentionally train all configured
+Experiments 33--36 and 38--42 are different: they intentionally train all configured
 variants and do not reuse a fixed baseline artifact.
 
 Some smoke-test examples below pass `--train-baseline` explicitly. This is only
@@ -1119,7 +1194,7 @@ the GCP environment variables from
   "4000" \
   "16000"
 
-# Leduc Experiment 35 — 900-traversal long-node smoke test on GCP
+# Leduc Experiment 35 — 900-traversal long-node baseline-cadence smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
   "ld-exp35-t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
@@ -1136,7 +1211,7 @@ the GCP environment variables from
   "4000" \
   "16000"
 
-# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node smoke test on GCP
+# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node baseline-cadence smoke test on GCP
 ./gcp/submit_batch_experiment.sh \
   "ld-exp36-e02t900-$(date +%Y%m%d-%H%M%S)" \
   "python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
@@ -1165,6 +1240,91 @@ the GCP environment variables from
     --baseline-network-train-steps 1 \
     --evaluation-interval 1 \
     --output-root outputs/cloud/smoke/leduc_dream_vectorized_baseline_equivalence" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 38 — long-node epsilon baseline-cadence-50 smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp38-eb50ln-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_long_node_comparison.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon_baseline50_long_node_comparison" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 39 — 900-traversal baseline-1000 long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp39-t900b1000-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_900_traversal_baseline1000_long_node.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_900_traversal_baseline1000_long_node" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 40 — epsilon-0.20 900-traversal baseline-1000 long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp40-e02t900b1000-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_baseline1000_long_node.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon020_900_traversal_baseline1000_long_node" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 41 — Experiment 22 candidate long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp41-longnode-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_long_node_run.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_long_node_run" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
+
+# Leduc Experiment 42 — epsilon-0.20 candidate long-node smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp42-e02-longnode-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run \
+    --seeds 1234 \
+    --iterations 3 \
+    --traversals 4 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --evaluation-interval 1 \
+    --output-root outputs/cloud/smoke/leduc_dream_candidate_epsilon020_long_node_run" \
   "n2-standard-4" \
   "3600" \
   "4000" \
@@ -1467,7 +1627,7 @@ python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_candidate_epsilon_baseline50_comparison
 
-# Leduc Experiment 35 — 900-traversal long-node smoke test
+# Leduc Experiment 35 — 900-traversal long-node baseline-cadence smoke test
 python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
   --seeds 1234 \
   --iterations 3 \
@@ -1478,7 +1638,7 @@ python -m experiments.leduc_poker.dream_candidate_900_traversal_long_node.run \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_candidate_900_traversal_long_node
 
-# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node smoke test
+# Leduc Experiment 36 — epsilon-0.20 900-traversal long-node baseline-cadence smoke test
 python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_long_node.run \
   --seeds 1234 \
   --iterations 3 \
@@ -1499,6 +1659,61 @@ python -m experiments.leduc_poker.dream_vectorized_baseline_equivalence.run \
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_vectorized_baseline_equivalence
+
+# Leduc Experiment 38 — long-node epsilon baseline-cadence-50 smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon_baseline50_long_node_comparison.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon_baseline50_long_node_comparison
+
+# Leduc Experiment 39 — 900-traversal baseline-1000 long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_900_traversal_baseline1000_long_node.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_900_traversal_baseline1000_long_node
+
+# Leduc Experiment 40 — epsilon-0.20 900-traversal baseline-1000 long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon020_900_traversal_baseline1000_long_node.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon020_900_traversal_baseline1000_long_node
+
+# Leduc Experiment 41 — Experiment 22 candidate long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_long_node_run.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_long_node_run
+
+# Leduc Experiment 42 — epsilon-0.20 candidate long-node smoke test
+python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run \
+  --seeds 1234 \
+  --iterations 3 \
+  --traversals 4 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --evaluation-interval 1 \
+  --output-root outputs/smoke_tests/dream_candidate_epsilon020_long_node_run
 ```
 
 For local smoke tests across all experiments:

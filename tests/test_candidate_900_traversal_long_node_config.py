@@ -9,6 +9,7 @@ from experiments.leduc_poker.dream_architecture_candidate_comparison.config impo
     POLICY_BASELINE_LAYERS,
 )
 from experiments.leduc_poker.dream_candidate_900_traversal_long_node.config import (
+    CANDIDATE_900_BASELINE50_VARIANT,
     CANDIDATE_900_VARIANT,
     CANDIDATE_900_VARIANTS,
     EXPERIMENT_CONFIG,
@@ -27,11 +28,14 @@ def test_900_traversal_long_node_run_uses_exp22_candidate_with_five_seeds():
     assert EXPERIMENT_CONFIG["seeds"] == DEFAULT_SEEDS_5
     assert EXPERIMENT_CONFIG["num_iterations"] == LONG_NODE_NUM_ITERATIONS == 1_300
     assert EXPERIMENT_CONFIG["num_traversals"] == LONG_NODE_NUM_TRAVERSALS == 900
+    assert EXPERIMENT_CONFIG["baseline_network_train_every"] == 1
+    assert EXPERIMENT_CONFIG["compute_baseline_grad_norm_diagnostics"] is False
     assert EXPERIMENT_CONFIG["target_nodes_touched"] == TARGET_NODES_TOUCHED == 15_000_000
     assert EXPERIMENT_CONFIG["baseline_variant"] == CANDIDATE_900_VARIANT
-    assert EXPERIMENT_CONFIG["treatment_keys"] == ["num_traversals"]
+    assert EXPERIMENT_CONFIG["treatment_keys"] == ["num_traversals", "baseline_network_train_every"]
     assert [variant["variant_id"] for variant in CANDIDATE_900_VARIANTS] == [
         CANDIDATE_900_VARIANT,
+        CANDIDATE_900_BASELINE50_VARIANT,
     ]
 
 
@@ -49,6 +53,18 @@ def test_900_traversal_long_node_run_preserves_candidate_training_spec():
     assert config["learning_rate"] == 0.003
     assert config["epsilon"] == 0.06
     assert config["average_strategy_weighting"] == "linear"
+
+
+def test_900_traversal_long_node_includes_sparse_baseline_treatment():
+    variant_by_id = {variant["variant_id"]: variant for variant in CANDIDATE_900_VARIANTS}
+
+    dense = apply_variant_overrides(EXPERIMENT_CONFIG, variant_by_id[CANDIDATE_900_VARIANT])
+    sparse = apply_variant_overrides(EXPERIMENT_CONFIG, variant_by_id[CANDIDATE_900_BASELINE50_VARIANT])
+
+    assert dense["num_traversals"] == sparse["num_traversals"] == 900
+    assert dense["baseline_network_train_every"] == 1
+    assert sparse["baseline_network_train_every"] == 50
+    assert dense["baseline_network_train_steps"] == sparse["baseline_network_train_steps"] == 50
 
 
 def test_900_traversal_long_node_cli_does_not_reuse_fixed_baseline_by_default():
