@@ -30,6 +30,7 @@ def test_import_experiment_configs():
     import experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_epsilon_baseline50_comparison.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_epsilon_baseline50_long_node_comparison.config  # noqa: F401
+    import experiments.leduc_poker.dream_final_candidate_checkpoint_head_to_head.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_long_node_run.config  # noqa: F401
     import experiments.leduc_poker.dream_baseline_network_budget_ablation.config  # noqa: F401
     import experiments.leduc_poker.dream_candidate_epsilon_exploration_ablation.config  # noqa: F401

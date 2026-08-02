@@ -194,7 +194,11 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_candidate_epsilon020_long_node_run/ # Experiment 42
+│       ├── dream_candidate_epsilon020_long_node_run/ # Experiment 42
+│       │   ├── config.py
+│       │   ├── run.py
+│       │   └── README.md
+│       └── dream_final_candidate_checkpoint_head_to_head/ # Experiment 43
 │           ├── config.py
 │           ├── run.py
 │           └── README.md
@@ -559,6 +563,14 @@ Replicates Experiment 41 and changes only the exploration rate to `epsilon=0.20`
 
 **Question:** does the high-exploration version of the Experiment 22 candidate improve when trained alone to the long-node budget?
 
+### 43. DREAM final-candidate checkpoint head-to-head
+
+[`experiments/leduc_poker/dream_final_candidate_checkpoint_head_to_head/`](experiments/leduc_poker/dream_final_candidate_checkpoint_head_to_head/README.md)
+
+Trains the best DREAM configuration selected from Experiment 38 once per seed and saves average-policy snapshots at `1,500`, `3,000`, `4,500`, `6,000`, and `7,500` iterations, corresponding to approximately `3m`, `6m`, `9m`, `12m`, and `15m` nodes. Every checkpoint is then evaluated against every other checkpoint by exact seat-averaged OpenSpiel expected value, with seed-level inference matching the Deep CFR temporal head-to-head experiment.
+
+**Question:** does the long-horizon exploitability improvement in the selected DREAM configuration correspond to progressively stronger direct-play performance?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -705,6 +717,9 @@ python -m experiments.leduc_poker.dream_candidate_long_node_run.run
 
 # Experiment 42 — epsilon-0.20 candidate long-node run
 python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run
+
+# Experiment 43 — final-candidate temporal checkpoint head-to-head
+python -m experiments.leduc_poker.dream_final_candidate_checkpoint_head_to_head.run
 ```
 
 Experiments 23--32 and 37 reuse the tracked Experiment 22
@@ -1329,6 +1344,33 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 43 — final-candidate checkpoint head-to-head smoke test on GCP
+./gcp/submit_batch_experiment.sh \
+  "ld-exp43-final-h2h-smoke-$(date +%Y%m%d-%H%M%S)" \
+  "python -m experiments.leduc_poker.dream_final_candidate_checkpoint_head_to_head.run \
+    --seeds 1234 \
+    --iterations 10 \
+    --checkpoint-schedule 2,4,6,8,10 \
+    --traversals 4 \
+    --evaluation-interval 2 \
+    --policy-network-train-every 2 \
+    --policy-network-train-steps 1 \
+    --advantage-network-train-steps 1 \
+    --baseline-network-train-steps 1 \
+    --baseline-network-train-every 2 \
+    --policy-network-layers 8,8 \
+    --advantage-network-layers 8,8 \
+    --baseline-network-layers 8,8 \
+    --batch-size-advantage 2 \
+    --batch-size-strategy 2 \
+    --batch-size-baseline 2 \
+    --memory-capacity 256 \
+    --output-root outputs/cloud/smoke/leduc_dream_final_candidate_checkpoint_head_to_head" \
+  "n2-standard-4" \
+  "3600" \
+  "4000" \
+  "16000"
 ```
 
 For a quick local smoke test of later DREAM ablations:
@@ -1714,6 +1756,27 @@ python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run \
   --baseline-network-train-steps 1 \
   --evaluation-interval 1 \
   --output-root outputs/smoke_tests/dream_candidate_epsilon020_long_node_run
+
+# Leduc Experiment 43 — final-candidate checkpoint head-to-head smoke test
+python -m experiments.leduc_poker.dream_final_candidate_checkpoint_head_to_head.run \
+  --seeds 1234 \
+  --iterations 10 \
+  --checkpoint-schedule 2,4,6,8,10 \
+  --traversals 4 \
+  --evaluation-interval 2 \
+  --policy-network-train-every 2 \
+  --policy-network-train-steps 1 \
+  --advantage-network-train-steps 1 \
+  --baseline-network-train-steps 1 \
+  --baseline-network-train-every 2 \
+  --policy-network-layers 8,8 \
+  --advantage-network-layers 8,8 \
+  --baseline-network-layers 8,8 \
+  --batch-size-advantage 2 \
+  --batch-size-strategy 2 \
+  --batch-size-baseline 2 \
+  --memory-capacity 256 \
+  --output-root outputs/smoke_tests/dream_final_candidate_checkpoint_head_to_head
 ```
 
 For local smoke tests across all experiments:

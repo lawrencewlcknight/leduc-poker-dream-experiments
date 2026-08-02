@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 import random
 import math
-from typing import Dict, List, Optional, Sequence
+from typing import Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -340,6 +340,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         isolate_policy_training_rng: bool = True,
         target_iteration: Optional[int] = None,
         start_time: Optional[float] = None,
+        post_iteration_callback: Optional[Callable[["DREAMSolver", int], None]] = None,
     ):
         """Train DREAM and return checkpoint metrics.
 
@@ -417,6 +418,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 self._cumulative_policy_training_seconds += time.perf_counter() - policy_start
                 self._policy_network_train_steps = original_steps
                 curves.append(self._checkpoint_metrics(start_time))
+
+            if post_iteration_callback is not None:
+                post_iteration_callback(self, int(iteration))
 
         return pd.DataFrame(curves)
 
