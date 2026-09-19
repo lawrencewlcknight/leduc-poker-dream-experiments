@@ -571,6 +571,19 @@ Trains the best DREAM configuration selected from Experiment 38 once per seed an
 
 **Question:** does the long-horizon exploitability improvement in the selected DREAM configuration correspond to progressively stronger direct-play performance?
 
+### 44. DREAM frozen-reservoir distillation audit
+
+[`experiments/leduc_poker/dream_frozen_reservoir_distillation_audit/`](experiments/leduc_poker/dream_frozen_reservoir_distillation_audit/README.md)
+
+Trains three instances of the Experiment 43 configuration for a fixed 12-hour
+active budget, saves each final one-million-row strategy reservoir, and compares
+the exact grouped empirical policy with fresh row-wise MSE, row-wise
+soft-target cross-entropy, grouped cross-entropy, and four-times-extended
+grouped cross-entropy fits. The three seeds run concurrently on separate GCP
+VMs.
+
+**Question:** is the selected DREAM candidate limited by its underlying sampled average strategy or by neural average-policy distillation?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -720,6 +733,10 @@ python -m experiments.leduc_poker.dream_candidate_epsilon020_long_node_run.run
 
 # Experiment 43 — final-candidate temporal checkpoint head-to-head
 python -m experiments.leduc_poker.dream_final_candidate_checkpoint_head_to_head.run
+
+# Experiment 44 — frozen-reservoir distillation audit smoke test
+python -m experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run \
+  smoke --output-root /tmp/dream-frozen-reservoir-audit-smoke
 ```
 
 Experiments 23--32 and 37 reuse the tracked Experiment 22
@@ -1371,6 +1388,15 @@ the GCP environment variables from
   "3600" \
   "4000" \
   "16000"
+
+# Leduc Experiment 44 — frozen-reservoir audit on three parallel VMs
+# PROJECT_ID, REGION, BUCKET and SA_EMAIL use the standard DREAM values.
+export REPO_REF="$(git rev-parse HEAD)"
+export RUN_ID="drm44-$(date -u '+%Y%m%d-%H%M%S')"
+export PARALLELISM=3
+
+./gcp/run_dream_frozen_reservoir_audit.sh smoke-local
+./gcp/run_dream_frozen_reservoir_audit.sh run
 ```
 
 For a quick local smoke test of later DREAM ablations:

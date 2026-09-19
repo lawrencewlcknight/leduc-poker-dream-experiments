@@ -340,6 +340,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         isolate_policy_training_rng: bool = True,
         target_iteration: Optional[int] = None,
         start_time: Optional[float] = None,
+        max_training_seconds: Optional[float] = None,
         post_iteration_callback: Optional[Callable[["DREAMSolver", int], None]] = None,
     ):
         """Train DREAM and return checkpoint metrics.
@@ -352,6 +353,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
 
         ``target_iteration`` allows a caller to train incrementally from the
         current solver iteration, which is used by checkpoint/resume ablations.
+        ``max_training_seconds`` applies a wall-clock budget measured from
+        ``start_time``.  The solver checks the budget between completed DREAM
+        iterations so that replay and network updates are never left partial.
         """
         mode = str(policy_training_mode)
         if mode not in {"intermittent", "final_only"}:
@@ -359,6 +363,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
 
         if start_time is None:
             start_time = time.perf_counter()
+        deadline = None
+        if max_training_seconds is not None:
+            max_training_seconds = float(max_training_seconds)
+            if max_training_seconds <= 0.0:
+                raise ValueError("max_training_seconds must be positive")
+            deadline = float(start_time) + max_training_seconds
         if target_iteration is None:
             target_iteration = self._num_iterations
         target_iteration = int(target_iteration)
@@ -369,6 +379,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
 
         # In the official DREAM repository an iteration denotes a sequential update for both players.
         for iteration in range(self._iteration + 1, target_iteration + 1):
+            if deadline is not None and time.perf_counter() >= deadline:
+                break
             self._apply_learning_rate_schedule(iteration)
             self._iteration = int(iteration)
             for traverser in range(self._num_players):
@@ -421,6 +433,9 @@ class DREAMSolver(policy.Policy if policy is not None else object):
 
             if post_iteration_callback is not None:
                 post_iteration_callback(self, int(iteration))
+
+            if deadline is not None and time.perf_counter() >= deadline:
+                break
 
         return pd.DataFrame(curves)
 
