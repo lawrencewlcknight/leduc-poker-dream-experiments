@@ -352,6 +352,7 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         start_time: Optional[float] = None,
         max_training_seconds: Optional[float] = None,
         post_iteration_callback: Optional[Callable[["DREAMSolver", int], None]] = None,
+        exclude_post_iteration_callback_time: bool = False,
     ):
         """Train DREAM and return checkpoint metrics.
 
@@ -366,6 +367,10 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         ``max_training_seconds`` applies a wall-clock budget measured from
         ``start_time``.  The solver checks the budget between completed DREAM
         iterations so that replay and network updates are never left partial.
+        When ``exclude_post_iteration_callback_time`` is true, time spent in
+        the callback extends the deadline. This permits deferred-evaluation
+        experiments to freeze diagnostic checkpoints without reducing the
+        learner's active training budget.
         """
         mode = str(policy_training_mode)
         if mode not in {"intermittent", "final_only"}:
@@ -444,7 +449,10 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 curves.append(self._checkpoint_metrics(start_time))
 
             if post_iteration_callback is not None:
+                callback_started = time.perf_counter()
                 post_iteration_callback(self, int(iteration))
+                if exclude_post_iteration_callback_time and deadline is not None:
+                    deadline += time.perf_counter() - callback_started
 
             if deadline is not None and time.perf_counter() >= deadline:
                 break

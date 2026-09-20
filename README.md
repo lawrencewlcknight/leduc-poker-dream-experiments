@@ -198,10 +198,10 @@ The repository is organised so that each experiment can be run independently whi
 │       │   ├── config.py
 │       │   ├── run.py
 │       │   └── README.md
-│       └── dream_final_candidate_checkpoint_head_to_head/ # Experiment 43
-│           ├── config.py
-│           ├── run.py
-│           └── README.md
+│       ├── dream_final_candidate_checkpoint_head_to_head/ # Experiment 43
+│       ├── dream_frozen_reservoir_distillation_audit/     # Experiment 44
+│       ├── dream_paper_aligned_frozen_reservoir_audit/    # Experiment 45
+│       └── dream_paper_aligned_36h_trajectory/             # Experiment 46
 ├── docs/
 │   └── OUTPUT_CONVENTIONS.md
 ├── notebooks/                                       # Original notebook archive
@@ -598,6 +598,20 @@ representation are held fixed so that the effect of the training regime can be
 compared directly.
 
 **Question:** does the original paper's substantially larger fitting budget improve DREAM under the same 12-hour active-training budget?
+
+### 46. Paper-aligned DREAM five-seed 36-hour trajectory
+
+[`experiments/leduc_poker/dream_paper_aligned_36h_trajectory/`](experiments/leduc_poker/dream_paper_aligned_36h_trajectory/README.md)
+
+Extends the selected Experiment 45 configuration to five thesis-comparison
+seeds and 36 active training hours. Each seed runs on its own `n2-standard-8`
+VM. Compact grouped strategy sufficient statistics are frozen every 30 minutes,
+at the first completed iteration crossing 15 million nodes, and at the final
+boundary. Fresh 4,000-update grouped soft-target cross-entropy policy fits and
+exact exploitability calculations run afterwards, so diagnostic work does not
+consume the training budget.
+
+**Question:** does the paper-aligned DREAM candidate continue improving beyond 12 hours, and how stable is its exploitability over time and nodes touched?
 
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
@@ -1423,6 +1437,21 @@ export PARALLELISM=3
 
 ./gcp/run_dream_paper_aligned_frozen_reservoir_audit.sh smoke-local
 ./gcp/run_dream_paper_aligned_frozen_reservoir_audit.sh run
+```
+
+```bash
+# Leduc Experiment 46 — paper-aligned five-seed, 36-hour trajectory
+# PROJECT_ID, REGION, BUCKET and SA_EMAIL use the standard DREAM values.
+export REPO_REF="$(git rev-parse HEAD)"
+export RUN_ID="drm46-paper36h-$(date -u '+%Y%m%d-%H%M%S')"
+export PARALLELISM=5
+
+./gcp/run_dream_paper_aligned_36h_trajectory.sh smoke-local
+./gcp/run_dream_paper_aligned_36h_trajectory.sh run
+
+# Later, with the same RUN_ID:
+./gcp/run_dream_paper_aligned_36h_trajectory.sh status
+./gcp/run_dream_paper_aligned_36h_trajectory.sh resume
 ```
 
 For a quick local smoke test of later DREAM ablations:
