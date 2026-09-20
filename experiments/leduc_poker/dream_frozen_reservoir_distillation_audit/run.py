@@ -77,6 +77,8 @@ def _json_config(config: Mapping) -> Dict:
 def _fit_steps(solver, config: Mapping, *, smoke: bool) -> int:
     if smoke:
         return int(config.get("smoke_reference_fit_steps", 2))
+    if config.get("fresh_reference_fit_steps") is not None:
+        return int(config["fresh_reference_fit_steps"])
     # Match the number of policy-gradient steps consumed by the warm-started
     # Experiment 43 extractor over this seed's realised 12-hour trajectory.
     return max(int(config["policy_network_train_steps"]), int(solver._policy_gradient_steps_total))
@@ -99,7 +101,7 @@ def run_worker(
     if success_path.exists():
         return worker_dir
     if pyspiel is None:
-        raise RuntimeError("OpenSpiel is required for Experiment 44")
+        raise RuntimeError(f"OpenSpiel is required for Experiment {EXPERIMENT_ID}")
 
     write_json(
         worker_dir / "worker_manifest.json",
@@ -127,6 +129,7 @@ def run_worker(
         solver = make_dream_solver(config, seed)
         training_started = time.perf_counter()
         curves = solver.solve(
+            policy_training_mode=str(config.get("policy_training_mode", "intermittent")),
             isolate_policy_training_rng=bool(config.get("isolate_policy_training_rng", True)),
             start_time=training_started,
             target_iteration=int(config["num_iterations"]),
@@ -136,7 +139,15 @@ def run_worker(
         curves.insert(0, "seed", seed)
         curves.to_csv(worker_dir / "training_curves.csv", index=False)
 
-        deployed_metrics = exact_policy_metrics(game, NetworkPolicy(solver._policy_network))
+        policy_was_fitted = int(solver._policy_gradient_steps_total) > 0
+        deployed_metrics = (
+            exact_policy_metrics(game, NetworkPolicy(solver._policy_network))
+            if policy_was_fitted
+            else {
+                "exploitability": float("nan"),
+                "policy_value_player_0": float("nan"),
+            }
+        )
         reference_steps = _fit_steps(solver, config, smoke=smoke)
         reservoir = freeze_strategy_reservoir(solver, game)
         save_frozen_reservoir(reservoir_path, reservoir)
@@ -151,6 +162,7 @@ def run_worker(
             "strategy_capacity": reservoir.capacity,
             "policy_training_events": int(solver._policy_training_events),
             "policy_gradient_steps_total": int(solver._policy_gradient_steps_total),
+            "deployed_policy_was_fitted": policy_was_fitted,
             "fresh_reference_fit_steps": reference_steps,
             "deployed_warm_started_exploitability": deployed_metrics["exploitability"],
             "deployed_warm_started_policy_value_player_0": deployed_metrics["policy_value_player_0"],
@@ -201,6 +213,7 @@ def run_worker(
             batch_size=int(config["batch_size_strategy"]),
             train_steps=int(steps),
             sampling_seed=sampling_seed,
+            gradient_clip_norm=config.get("gradient_clip_norm"),
         )
         exact = exact_policy_metrics(game, NetworkPolicy(model))
         result = {

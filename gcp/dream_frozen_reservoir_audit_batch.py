@@ -11,6 +11,7 @@ import shlex
 
 REPO_URL = "https://github.com/lawrencewlcknight/leduc-poker-dream-experiments.git"
 MODULE = "experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run"
+CONTROLLER_RUNNER = "gcp/run_dream_frozen_reservoir_audit.sh"
 TASK_COUNT = 3
 
 
@@ -35,10 +36,10 @@ REPO_REF={_q(args.repo_ref)}
 BUCKET_ROOT={_q(args.bucket_root.rstrip('/'))}
 RUN_ID={_q(args.run_id)}
 RETRY_ATTEMPT="${{BATCH_TASK_RETRY_ATTEMPT:-0}}"
-WORK_ROOT="/workspace/dream-exp44-$RETRY_ATTEMPT"
+WORK_ROOT="/workspace/dream-exp{_q(args.experiment_number)}-$RETRY_ATTEMPT"
 REPOSITORY="$WORK_ROOT/repository"
 OUTPUT_ROOT="$WORK_ROOT/output"
-VENV_ROOT="/tmp/dream-exp44-venv-$RETRY_ATTEMPT"
+VENV_ROOT="/tmp/dream-exp{_q(args.experiment_number)}-venv-$RETRY_ATTEMPT"
 
 if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
 $SUDO apt-get update
@@ -69,7 +70,7 @@ export PYTHONUNBUFFERED=1
 REPO_URL={_q(args.repo_url)}
 REPO_REF={_q(args.repo_ref)}
 CONTROLLER_ACTION={_q(args.controller_action)}
-WORK_ROOT="/workspace/dream-exp44-controller-${{BATCH_TASK_RETRY_ATTEMPT:-0}}"
+WORK_ROOT="/workspace/dream-exp{_q(args.experiment_number)}-controller-${{BATCH_TASK_RETRY_ATTEMPT:-0}}"
 REPOSITORY="$WORK_ROOT/repository"
 
 if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
@@ -89,7 +90,7 @@ export RUN_ID={_q(args.run_id)}
 export PARALLELISM={_q(args.parallelism)}
 export EXP44_REMOTE_CONTROLLER=1
 
-exec bash gcp/run_dream_frozen_reservoir_audit.sh "$CONTROLLER_ACTION"
+exec bash {_q(args.controller_runner)} "$CONTROLLER_ACTION"
 """
 
 
@@ -99,25 +100,25 @@ def _script(args) -> str:
     bootstrap = _bootstrap(args)
     if args.kind == "smoke":
         action = f"""
-python -m {MODULE} smoke --output-root "$OUTPUT_ROOT"
+python -m {args.module} smoke --output-root "$OUTPUT_ROOT"
 gcloud storage rsync --recursive "$OUTPUT_ROOT" "$BUCKET_ROOT/$RUN_ID/smoke"
 """.strip()
     elif args.kind == "train":
         action = f"""
 TASK_INDEX="${{BATCH_TASK_INDEX:?Google Batch did not set BATCH_TASK_INDEX}}"
-TASK_METADATA="$(python - "$TASK_INDEX" <<'PY' | sed -n 's/^EXP44_TASK_METADATA //p' | tail -n 1
+TASK_METADATA="$(python - "$TASK_INDEX" <<'PY' | sed -n 's/^DREAM_AUDIT_TASK_METADATA //p' | tail -n 1
 import sys
-from experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.config import PRODUCTION_SEEDS
-from experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run import task_name
+from {args.module.rsplit('.', 1)[0]}.config import PRODUCTION_SEEDS
+from {args.module} import task_name
 index = int(sys.argv[1])
 seed = int(PRODUCTION_SEEDS[index])
-print("EXP44_TASK_METADATA", seed, task_name(index, seed))
+print("DREAM_AUDIT_TASK_METADATA", seed, task_name(index, seed))
 PY
 )"
 read -r SEED TASK_NAME EXTRA_METADATA <<< "$TASK_METADATA"
 EXPECTED_TASK_NAME="task_$(printf '%03d' "$TASK_INDEX")_seed_$SEED"
 if [[ ! "$SEED" =~ ^[0-9]+$ || "$TASK_NAME" != "$EXPECTED_TASK_NAME" || -n "$EXTRA_METADATA" ]]; then
-  echo "Invalid Experiment 44 task metadata: $TASK_METADATA" >&2
+  echo "Invalid Experiment {args.experiment_number} task metadata: $TASK_METADATA" >&2
   exit 2
 fi
 REMOTE_TASK="$BUCKET_ROOT/$RUN_ID/workers/$TASK_NAME"
@@ -131,7 +132,7 @@ upload_worker() {{
   fi
 }}
 trap upload_worker EXIT
-python -m {MODULE} worker --task-index "$TASK_INDEX" --output-root "$OUTPUT_ROOT"
+python -m {args.module} worker --task-index "$TASK_INDEX" --output-root "$OUTPUT_ROOT"
 """.strip()
     elif args.kind == "aggregate":
         action = f"""
@@ -139,7 +140,7 @@ mkdir -p "$OUTPUT_ROOT/workers"
 gcloud storage rsync --recursive \
   --exclude='(^|/)(frozen_strategy_reservoir[.]npz|grouped_empirical_policy[.]npz|policies|training_curves[.]csv)(/|$)' \
   "$BUCKET_ROOT/$RUN_ID/workers" "$OUTPUT_ROOT/workers"
-python -m {MODULE} aggregate --output-root "$OUTPUT_ROOT"
+python -m {args.module} aggregate --output-root "$OUTPUT_ROOT"
 gcloud storage rsync --recursive "$OUTPUT_ROOT/analysis" "$BUCKET_ROOT/$RUN_ID/analysis"
 """.strip()
     else:  # pragma: no cover
@@ -185,7 +186,7 @@ def build_job(args) -> dict:
             ],
         },
         "logsPolicy": {"destination": "CLOUD_LOGGING"},
-        "labels": {"experiment": "dream-frozen-reservoir", "stage": args.kind},
+        "labels": {"experiment": args.label, "stage": args.kind},
     }
 
 
@@ -202,6 +203,10 @@ def main() -> None:
     parser.add_argument("--project-id", default="")
     parser.add_argument("--region", default="")
     parser.add_argument("--controller-action", choices=("orchestrate", "orchestrate-resume"), default="orchestrate")
+    parser.add_argument("--module", default=MODULE)
+    parser.add_argument("--controller-runner", default=CONTROLLER_RUNNER)
+    parser.add_argument("--experiment-number", type=int, default=44)
+    parser.add_argument("--label", default="dream-frozen-reservoir")
     args = parser.parse_args()
     if args.parallelism < 1 or args.parallelism > TASK_COUNT:
         parser.error(f"--parallelism must be between 1 and {TASK_COUNT}")

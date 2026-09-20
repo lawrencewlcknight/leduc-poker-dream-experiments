@@ -584,6 +584,21 @@ VMs.
 
 **Question:** is the selected DREAM candidate limited by its underlying sampled average strategy or by neural average-policy distillation?
 
+### 45. Paper-aligned DREAM frozen-reservoir audit
+
+[`experiments/leduc_poker/dream_paper_aligned_frozen_reservoir_audit/`](experiments/leduc_poker/dream_paper_aligned_frozen_reservoir_audit/README.md)
+
+Repeats Experiment 44's paired three-seed, 12-hour design while adopting the
+original DREAM paper's principal numerical Leduc settings: 900 traversals,
+`epsilon=0.50`, 3,000 advantage updates, 1,000 baseline updates per iteration,
+paper-sized minibatches and replay memories, learning rate `0.001`, gradient
+clipping at `1.0`, per-iteration advantage-network reinitialisation, and fresh
+4,000-update average-policy fits. The Experiment 44 network sizes and OpenSpiel
+representation are held fixed so that the effect of the training regime can be
+compared directly.
+
+**Question:** does the original paper's substantially larger fitting budget improve DREAM under the same 12-hour active-training budget?
+
 Future DREAM ablations should be added as separate experiment folders under `experiments/leduc_poker/`, while reusing the shared `dream_poker` package and output conventions.
 
 ## Setup
@@ -1397,6 +1412,17 @@ export PARALLELISM=3
 
 ./gcp/run_dream_frozen_reservoir_audit.sh smoke-local
 ./gcp/run_dream_frozen_reservoir_audit.sh run
+```
+
+```bash
+# Leduc Experiment 45 — paper-aligned frozen-reservoir audit on three parallel VMs
+# PROJECT_ID, REGION, BUCKET and SA_EMAIL use the standard DREAM values.
+export REPO_REF="$(git rev-parse HEAD)"
+export RUN_ID="drm45-$(date -u '+%Y%m%d-%H%M%S')"
+export PARALLELISM=3
+
+./gcp/run_dream_paper_aligned_frozen_reservoir_audit.sh smoke-local
+./gcp/run_dream_paper_aligned_frozen_reservoir_audit.sh run
 ```
 
 For a quick local smoke test of later DREAM ablations:

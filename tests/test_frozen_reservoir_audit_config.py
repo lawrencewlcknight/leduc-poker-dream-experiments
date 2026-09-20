@@ -24,6 +24,10 @@ def _batch_args(kind: str) -> Namespace:
         region="europe-west1",
         controller_action="orchestrate",
         parallelism=3,
+        module="experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run",
+        controller_runner="gcp/run_dream_frozen_reservoir_audit.sh",
+        experiment_number=44,
+        label="dream-frozen-reservoir",
     )
 
 

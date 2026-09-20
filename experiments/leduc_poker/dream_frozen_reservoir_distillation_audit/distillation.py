@@ -6,7 +6,7 @@ import copy
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Mapping, Sequence
+from typing import Dict, Mapping, Optional, Sequence
 
 import numpy as np
 import torch
@@ -265,11 +265,14 @@ def fit_frozen_policy(
     batch_size: int,
     train_steps: int,
     sampling_seed: int,
+    gradient_clip_norm: Optional[float] = None,
 ) -> tuple[torch.nn.Module, Dict[str, float]]:
     if arm not in {ROW_MSE, ROW_CE, GROUPED_CE, GROUPED_CE_EXTENDED}:
         raise ValueError(f"Unknown distillation arm: {arm}")
     if train_steps <= 0:
         raise ValueError("train_steps must be positive")
+    if gradient_clip_norm is not None and float(gradient_clip_norm) <= 0.0:
+        raise ValueError("gradient_clip_norm must be positive when provided")
     model = build_network(
         network_type,
         int(reservoir.info_states.shape[1]),
@@ -319,6 +322,8 @@ def fit_frozen_policy(
             raise RuntimeError(f"Non-finite {arm} loss at step {step}")
         optimizer.zero_grad()
         loss.backward()
+        if gradient_clip_norm is not None:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), float(gradient_clip_norm))
         optimizer.step()
         last_loss = float(loss.detach().cpu().item())
 

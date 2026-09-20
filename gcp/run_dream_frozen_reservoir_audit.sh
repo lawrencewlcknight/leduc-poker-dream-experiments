@@ -5,14 +5,19 @@ ACTION="${1:-run}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUILDER="$SCRIPT_DIR/dream_frozen_reservoir_audit_batch.py"
+EXPERIMENT_NUMBER="${DREAM_AUDIT_EXPERIMENT_NUMBER:-44}"
+EXPERIMENT_MODULE="${DREAM_AUDIT_MODULE:-experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run}"
+CONTROLLER_RUNNER="${DREAM_AUDIT_CONTROLLER_RUNNER:-gcp/run_dream_frozen_reservoir_audit.sh}"
+EXPERIMENT_LABEL="${DREAM_AUDIT_LABEL:-dream-frozen-reservoir}"
+DEFAULT_RUN_PREFIX="${DREAM_AUDIT_RUN_PREFIX:-drm44}"
 
 if [[ "$ACTION" == "smoke-local" ]]; then
-  SMOKE_OUTPUT="${SMOKE_OUTPUT:-/tmp/dream-frozen-reservoir-audit-smoke}"
-  export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/dream-exp44-matplotlib}"
-  export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/tmp/dream-exp44-cache}"
+  SMOKE_OUTPUT="${SMOKE_OUTPUT:-/tmp/dream-exp${EXPERIMENT_NUMBER}-audit-smoke}"
+  export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/dream-exp${EXPERIMENT_NUMBER}-matplotlib}"
+  export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/tmp/dream-exp${EXPERIMENT_NUMBER}-cache}"
   mkdir -p "$MPLCONFIGDIR" "$XDG_CACHE_HOME"
   cd "$REPO_DIR"
-  exec python3 -m experiments.leduc_poker.dream_frozen_reservoir_distillation_audit.run \
+  exec python3 -m "$EXPERIMENT_MODULE" \
     smoke --output-root "$SMOKE_OUTPUT"
 fi
 
@@ -20,14 +25,14 @@ fi
 : "${REGION:?Set REGION}"
 : "${BUCKET:?Set BUCKET}"
 : "${SA_EMAIL:?Set SA_EMAIL}"
-: "${REPO_REF:?Set REPO_REF to the pushed Experiment 44 commit SHA}"
+: "${REPO_REF:?Set REPO_REF to the pushed Experiment ${EXPERIMENT_NUMBER} commit SHA}"
 
 if ! git -C "$REPO_DIR" cat-file -e "${REPO_REF}^{commit}" 2>/dev/null; then
   echo "REPO_REF is not a commit in this local checkout: $REPO_REF" >&2
   exit 2
 fi
 
-RUN_ID="${RUN_ID:-drm44-$(date -u '+%Y%m%d-%H%M%S')}"
+RUN_ID="${RUN_ID:-${DEFAULT_RUN_PREFIX}-$(date -u '+%Y%m%d-%H%M%S')}"
 if [[ ${#RUN_ID} -gt 30 || ! "$RUN_ID" =~ ^[a-z][a-z0-9-]*[a-z0-9]$ ]]; then
   echo "RUN_ID must be 2-30 lowercase letters, digits or hyphens" >&2
   exit 2
@@ -52,7 +57,7 @@ elif [[ "$ACTION" == "orchestrate-resume" ]]; then
   CONTROLLER_ACTION="orchestrate-resume"
 fi
 
-TEMP_DIR="$(mktemp -d /tmp/dream-exp44-batch.XXXXXX)"
+TEMP_DIR="$(mktemp -d "/tmp/dream-exp${EXPERIMENT_NUMBER}-batch.XXXXXX")"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 build_json() {
@@ -60,7 +65,9 @@ build_json() {
     --bucket-root "$BUCKET_ROOT" --service-account "$SA_EMAIL" \
     --repo-ref "$REPO_REF" --parallelism "$PARALLELISM" \
     --project-id "$PROJECT_ID" --region "$REGION" \
-    --controller-action "$CONTROLLER_ACTION"
+    --controller-action "$CONTROLLER_ACTION" \
+    --module "$EXPERIMENT_MODULE" --controller-runner "$CONTROLLER_RUNNER" \
+    --experiment-number "$EXPERIMENT_NUMBER" --label "$EXPERIMENT_LABEL"
 }
 submit_job() {
   gcloud batch jobs submit "$1" --project "$PROJECT_ID" --location "$REGION" --config "$2"
@@ -104,10 +111,10 @@ build_json aggregate "$TEMP_DIR/aggregate.json"
 
 case "$ACTION" in
   dry-run)
-    cp "$TEMP_DIR/controller.json" "$REPO_DIR/exp44_controller_job.json"
-    cp "$TEMP_DIR/smoke.json" "$REPO_DIR/exp44_smoke_job.json"
-    cp "$TEMP_DIR/train.json" "$REPO_DIR/exp44_train_job.json"
-    cp "$TEMP_DIR/aggregate.json" "$REPO_DIR/exp44_aggregate_job.json"
+    cp "$TEMP_DIR/controller.json" "$REPO_DIR/exp${EXPERIMENT_NUMBER}_controller_job.json"
+    cp "$TEMP_DIR/smoke.json" "$REPO_DIR/exp${EXPERIMENT_NUMBER}_smoke_job.json"
+    cp "$TEMP_DIR/train.json" "$REPO_DIR/exp${EXPERIMENT_NUMBER}_train_job.json"
+    cp "$TEMP_DIR/aggregate.json" "$REPO_DIR/exp${EXPERIMENT_NUMBER}_aggregate_job.json"
     ;;
   status)
     gcloud batch jobs list --project "$PROJECT_ID" --location "$REGION" \
@@ -119,7 +126,7 @@ case "$ACTION" in
     ;;
   run|resume)
     submit_job "$CONTROLLER_JOB" "$TEMP_DIR/controller.json"
-    echo "Remote DREAM Experiment 44 controller submitted: $CONTROLLER_JOB"
+    echo "Remote DREAM Experiment ${EXPERIMENT_NUMBER} controller submitted: $CONTROLLER_JOB"
     echo "The laptop may now be disconnected or switched off."
     ;;
   orchestrate)

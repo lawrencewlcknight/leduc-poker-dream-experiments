@@ -107,6 +107,11 @@ def make_dream_solver(config: Dict, seed: int) -> DREAMSolver:
         policy_network_train_steps=config["policy_network_train_steps"],
         baseline_network_train_steps=config["baseline_network_train_steps"],
         baseline_network_train_every=config.get("baseline_network_train_every", 1),
+        advantage_network_reinitialize_every_iteration=config.get(
+            "advantage_network_reinitialize_every_iteration",
+            False,
+        ),
+        gradient_clip_norm=config.get("gradient_clip_norm"),
         compute_baseline_grad_norm_diagnostics=config.get(
             "compute_baseline_grad_norm_diagnostics",
             False,

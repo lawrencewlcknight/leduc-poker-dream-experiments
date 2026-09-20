@@ -96,6 +96,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         policy_network_train_steps: int = 200,
         baseline_network_train_steps: int = 100,
         baseline_network_train_every: int = 1,
+        advantage_network_reinitialize_every_iteration: bool = False,
+        gradient_clip_norm: Optional[float] = None,
         compute_baseline_grad_norm_diagnostics: bool = False,
         policy_network_train_every: int = 25,
         compute_exploitability: bool = True,
@@ -145,6 +147,14 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._baseline_network_train_every = int(baseline_network_train_every)
         if self._baseline_network_train_every <= 0:
             raise ValueError("baseline_network_train_every must be positive")
+        self._advantage_network_reinitialize_every_iteration = bool(
+            advantage_network_reinitialize_every_iteration
+        )
+        self._gradient_clip_norm = (
+            None if gradient_clip_norm is None else float(gradient_clip_norm)
+        )
+        if self._gradient_clip_norm is not None and self._gradient_clip_norm <= 0.0:
+            raise ValueError("gradient_clip_norm must be positive when provided")
         self._compute_baseline_grad_norm_diagnostics = bool(
             compute_baseline_grad_norm_diagnostics
         )
@@ -387,6 +397,8 @@ class DREAMSolver(policy.Policy if policy is not None else object):
                 self._collect_traversals_for_player(traverser)
 
                 advantage_start = time.perf_counter()
+                if self._advantage_network_reinitialize_every_iteration:
+                    self._reinitialize_advantage_network(traverser)
                 self._last_advantage_loss[traverser] = self._learn_advantage_network(traverser)
                 self._cumulative_advantage_training_seconds += time.perf_counter() - advantage_start
                 train_baseline_now = (
@@ -469,6 +481,10 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             "policy_training_events": int(self._policy_training_events),
             "policy_gradient_steps_total": int(self._policy_gradient_steps_total),
             "baseline_network_train_every": int(self._baseline_network_train_every),
+            "advantage_network_reinitialize_every_iteration": bool(
+                self._advantage_network_reinitialize_every_iteration
+            ),
+            "gradient_clip_norm": self._gradient_clip_norm,
             "compute_baseline_grad_norm_diagnostics": bool(
                 self._compute_baseline_grad_norm_diagnostics
             ),
@@ -551,6 +567,16 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         self._policy_gradient_steps_total = int(state.get("policy_gradient_steps_total", 0))
         self._baseline_network_train_every = int(
             state.get("baseline_network_train_every", self._baseline_network_train_every)
+        )
+        self._advantage_network_reinitialize_every_iteration = bool(
+            state.get(
+                "advantage_network_reinitialize_every_iteration",
+                self._advantage_network_reinitialize_every_iteration,
+            )
+        )
+        checkpoint_clip_norm = state.get("gradient_clip_norm", self._gradient_clip_norm)
+        self._gradient_clip_norm = (
+            None if checkpoint_clip_norm is None else float(checkpoint_clip_norm)
         )
         self._compute_baseline_grad_norm_diagnostics = bool(
             state.get(
@@ -848,6 +874,30 @@ class DREAMSolver(policy.Policy if policy is not None else object):
         return processed.astype(np.float32)
 
     # ---- Learning updates ----
+    def _reinitialize_advantage_network(self, player: int) -> None:
+        """Reset one player's advantage model and Adam state before refitting."""
+        player = int(player)
+        network = build_network(
+            self._advantage_network_type,
+            self._info_state_size,
+            self._advantage_network_layers,
+            self._num_actions,
+        )
+        self._advantage_networks[player] = network
+        self._optimizer_advantages[player] = torch.optim.Adam(
+            network.parameters(),
+            lr=self._current_learning_rate,
+        )
+
+    def _clip_gradients(self, parameters) -> Optional[float]:
+        if self._gradient_clip_norm is None:
+            return None
+        total_norm = torch.nn.utils.clip_grad_norm_(
+            parameters,
+            max_norm=self._gradient_clip_norm,
+        )
+        return float(total_norm.detach().cpu().item())
+
     def _learn_advantage_network(self, player: int) -> float:
         if len(self._advantage_memories[player]) < self._batch_size_advantage:
             return float("nan")
@@ -870,7 +920,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             out = net(x)
             loss = self._loss_mse(m * out, m * y)
             loss.backward()
-            self._last_advantage_grad_norm[player] = grad_norm(net.parameters())
+            clipped_from_norm = self._clip_gradients(net.parameters())
+            self._last_advantage_grad_norm[player] = (
+                clipped_from_norm
+                if clipped_from_norm is not None
+                else grad_norm(net.parameters())
+            )
             opt.step()
             last_loss = float(loss.detach().cpu().item())
         return last_loss
@@ -914,11 +969,16 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             pred_t = net(x).gather(1, actions).squeeze(1)
             loss = self._loss_mse(pred_t, target_t)
             loss.backward()
+            clipped_from_norm = self._clip_gradients(net.parameters())
             if (
                 self._compute_baseline_grad_norm_diagnostics
                 and step_idx == self._baseline_network_train_steps - 1
             ):
-                self._last_baseline_grad_norm[traverser] = grad_norm(net.parameters())
+                self._last_baseline_grad_norm[traverser] = (
+                    clipped_from_norm
+                    if clipped_from_norm is not None
+                    else grad_norm(net.parameters())
+                )
             opt.step()
             last_loss = float(loss.detach().cpu().item())
         return last_loss
@@ -982,7 +1042,12 @@ class DREAMSolver(policy.Policy if policy is not None else object):
             probs = self._policy_softmax(logits)
             loss = self._loss_mse(m * probs, m * y)
             loss.backward()
-            self._last_policy_grad_norm = grad_norm(self._policy_network.parameters())
+            clipped_from_norm = self._clip_gradients(self._policy_network.parameters())
+            self._last_policy_grad_norm = (
+                clipped_from_norm
+                if clipped_from_norm is not None
+                else grad_norm(self._policy_network.parameters())
+            )
             self._optimizer_policy.step()
             self._policy_gradient_steps_total += 1
             last_loss = float(loss.detach().cpu().item())
